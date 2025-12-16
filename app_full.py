@@ -3,12 +3,12 @@ import os
 from openai import OpenAI
 
 # -------------------------------------------------------------------------
-# [설정] V18: 프리미엄 UI 에디션 (Final Fix)
+# [설정] V20: 해치 라운지 에디션 (네이밍 변경 적용)
 # -------------------------------------------------------------------------
 st.set_page_config(
     layout="wide",
-    page_title="서울 해치: AI 로컬 도슨트 플랫폼",
-    page_icon="🏛️",
+    page_title="해치의 AI 여행 라운지",
+    page_icon="🦁",
     initial_sidebar_state="expanded"
 )
 
@@ -44,11 +44,12 @@ seoul_db = {
 }
 
 # -------------------------------------------------------------------------
-# [UI] 사이드바 (디자인 개선)
+# [UI] 사이드바 (디자인 및 네이밍 변경)
 # -------------------------------------------------------------------------
 with st.sidebar:
-    st.markdown("## 🏛️ AI 로컬 도슨트 관제센터")
-    st.caption("Seoul AI Local Docent Platform")
+    # [변경 완료] 2번 안: 해치의 AI 여행 라운지
+    st.markdown("## 🦁 해치의 AI 여행 라운지")
+    st.caption("Haechi's AI Travel Lounge")
     st.markdown("---")
     
     if "OPENAI_API_KEY" in st.secrets:
@@ -57,13 +58,8 @@ with st.sidebar:
     else:
         api_key = st.text_input("OpenAI API Key", type="password")
         
-    client = None
-    if api_key:
-        try:
-            client = OpenAI(api_key=api_key)
-        except:
-            st.error("❌ 키 오류")
-            
+    client = OpenAI(api_key=api_key) if api_key else None
+    
     st.markdown("---")
     
     # 지역 선택
@@ -78,7 +74,7 @@ with st.sidebar:
         st.markdown(f"### 🦁 {char['name']}")
         st.caption(f"성격: {char['trait']} | 상태: 🟢 실시간 활동 중")
         
-        # [이미지/GIF 로딩 로직] - 여기서 에러 났던 부분 수정 완료
+        # [이미지/GIF 로딩 로직]
         gif_path = os.path.join("images", f"{region}_{char['name']}.gif")
         png_path = os.path.join("images", f"{region}_{char['name']}.png")
         
@@ -93,7 +89,7 @@ with st.sidebar:
 
 
 # -------------------------------------------------------------------------
-# [메인] 화면 구성 (디자인 개선)
+# [메인] 화면 구성
 # -------------------------------------------------------------------------
 
 # 메인 헤더
@@ -101,7 +97,7 @@ st.markdown("# 🇰🇷 서울 해치: 당신만의 AI 로컬 가이드")
 st.markdown("### Seoul Haechi: Your Personal AI Local Guide")
 st.markdown("---")
 
-# 비디오 로직 (V17 유지)
+# 비디오 로직
 local_video_path = "images/intro_video.mp4" 
 youtube_url = "https://youtu.be/YIpxEgUCpmA" 
 
@@ -121,7 +117,7 @@ with col_h1:
     st.write(f"{region}의 숨은 매력을 {char['name']}와 함께 발견해보세요.")
 with col_h2:
     with st.container(border=True):
-        st.metric(label="현재 AI 가이드 접속", value="ON AIR 🟢")
+        st.metric(label="현재 라운지 상태", value="OPEN 🟢")
 
 st.markdown("---")
 
@@ -134,121 +130,3 @@ with tab1:
     col1, col2 = st.columns(2)
     with col1:
         who = st.selectbox("누구와 함께?", ["혼자", "연인과", "친구들과", "아이와 함께", "부모님 모시고"])
-    with col2:
-        theme = st.selectbox("여행 테마", ["맛집 탐방", "인생샷/카페", "역사/문화", "힐링 산책", "쇼핑/마켓"])
-
-    detail = st.text_input("추가 요청 (예: 3시간 코스, 주차 필수, 매운 거 못 먹음)")
-    
-    if "course_result" not in st.session_state:
-        st.session_state.course_result = ""
-    if "map_image_url" not in st.session_state:
-        st.session_state.map_image_url = ""
-
-    if st.button("🚀 상세 코스 브리핑 받기", type="primary"):
-        if not client:
-            st.warning("API Key 확인 필요")
-        else:
-            with st.spinner(f"{region} 데이터를 분석 중입니다..."):
-                try:
-                    prompt = f"""
-                    당신은 {region}의 전문 가이드 '{char['name']}'입니다.
-                    사용자({who}, 테마:{theme}, 요청:{detail})를 위한 {region}의 실제 여행 코스를 아주 상세하게 작성하세요.
-                    
-                    [필수 포함 내용]
-                    1. **코스 요약:** 전체 동선 (장소A -> 장소B -> 장소C)
-                    2. **상세 안내 (장소별):**
-                       - **장소명 (실제 상호/명소):** - **추천 이유 & 특징:**
-                       - **운영 정보:** (시간, 휴무일)
-                       - **꿀팁:**
-                       - **이동 방법:**
-                    3. **마무리 멘트:** {char['trait']} 성격을 살린 인사말.
-                    
-                    출력 형식: 마크다운(Markdown).
-                    """
-                    resp = client.chat.completions.create(model="gpt-3.5-turbo", messages=[{"role":"user", "content":prompt}])
-                    st.session_state.course_result = resp.choices[0].message.content
-                    st.session_state.map_image_url = "" 
-                except Exception as e:
-                    st.error(f"오류: {e}")
-
-    if st.session_state.course_result:
-        st.markdown(st.session_state.course_result)
-        st.markdown("---")
-        st.subheader("🗺️ 이 코스를 지도로 보기")
-        
-        if st.button("🎨 AI 인포그래픽 지도 그리기", type="primary"):
-            if not client:
-                st.warning("API Key 필요")
-            else:
-                with st.spinner("AI 화가가 지도를 그리는 중..."):
-                    try:
-                        summary_prompt = f"Summarize this travel course in Seoul {region} into a list of locations: {st.session_state.course_result[:500]}"
-                        summary_resp = client.chat.completions.create(model="gpt-3.5-turbo", messages=[{"role":"user", "content":summary_prompt}])
-                        locations = summary_resp.choices[0].message.content
-                        
-                        image_prompt = f"A cute tourist map infographic of Seoul {region}. Path connecting: {locations}. Character '{char['name']}'. **Text labels must be clear.** High quality."
-                        res = client.images.generate(model="dall-e-3", prompt=image_prompt, size="1024x1024", quality="standard", n=1)
-                        st.session_state.map_image_url = res.data[0].url
-                    except Exception as e:
-                        st.error(f"지도 실패: {e}")
-
-    if st.session_state.map_image_url:
-        st.image(st.session_state.map_image_url, caption=f"{region} 여행 지도")
-
-# --- [Tab 2] 실시간 안내소 ---
-with tab2:
-    st.subheader(f"🎤 {char['name']}에게 물어보세요")
-    lang_col, _ = st.columns([1, 2])
-    with lang_col:
-        language = st.radio("Language", ["한국어", "English", "日本語", "中文"], horizontal=True)
-    
-    if "messages" not in st.session_state:
-        st.session_state.messages = []
-        
-    for m in st.session_state.messages:
-        with st.chat_message(m["role"]):
-            st.write(m["content"])
-
-    if chat_in := st.chat_input("질문 입력..."):
-        st.session_state.messages.append({"role":"user", "content":chat_in})
-        with st.chat_message("user"):
-            st.write(chat_in)
-            
-        if client:
-            with st.spinner("생각 중..."):
-                sys = f"너는 {region} 가이드 '{char['name']}'. 언어:{language}. 톤:{char['trait']}하고 활기참."
-                resp = client.chat.completions.create(model="gpt-3.5-turbo", messages=[{"role":"system", "content":sys}] + st.session_state.messages)
-                ai_text = resp.choices[0].message.content
-            
-            st.session_state.messages.append({"role":"assistant", "content":ai_text})
-            
-            with st.chat_message("assistant"):
-                st.write(ai_text)
-                try:
-                    response = client.audio.speech.create(model="tts-1", voice="nova", input=ai_text)
-                    response.stream_to_file("speech.mp3")
-                    st.audio("speech.mp3")
-                except:
-                    pass
-
-# --- [Tab 3] 인증샷 ---
-with tab3:
-    st.subheader(f"📸 {char['name']}와 함께 찰칵")
-    style = st.selectbox("화풍 선택", ["웹툰 스타일", "수채화", "실사 풍경", "3D 캐릭터"])
-    desc_input = st.text_input("상황 설명", key="img_input")
-    
-    if st.button("🖌️ 기념사진 생성", type="primary"):
-        if not client:
-            st.error("API Key 필요")
-        else:
-            with st.spinner("사진 인화 중..."):
-                try:
-                    p = f"Character '{char['name']}' in Seoul {region}, {desc_input}. Style: {style}."
-                    res = client.images.generate(model="dall-e-3", prompt=p, size="1024x1024", quality="standard", n=1)
-                    st.image(res.data[0].url)
-                except Exception as e:
-                    st.error(f"실패: {e}")
-
-# 푸터
-st.markdown("---")
-st.markdown("<div style='text-align: center; color: gray;'>ⓒ 2024 Seoul AI Local Docent Platform. Powered by M-Unit & OpenAI.</div>", unsafe_allow_html=True)
