@@ -3,7 +3,7 @@ import os
 from openai import OpenAI
 
 # -------------------------------------------------------------------------
-# [설정] V16: 라이브 모션 에디션 (Syntax Error Fixed)
+# [설정] V16: 라이브 모션 에디션 (Final Fix)
 # -------------------------------------------------------------------------
 st.set_page_config(layout="wide", page_title="Seoul Haechis V16")
 
@@ -39,7 +39,84 @@ seoul_db = {
 }
 
 # -------------------------------------------------------------------------
-# [UI] 사이드바
+# [UI] 사이드바 (에러 났던 45번 줄 안전하게 수정됨)
 # -------------------------------------------------------------------------
 with st.sidebar:
-    st.title("🎛️
+    st.title("🎛️ Control Center")
+    
+    if "OPENAI_API_KEY" in st.secrets:
+        api_key = st.secrets["OPENAI_API_KEY"]
+        st.success("🔐 VIP 모드: 가이드 활성화")
+    else:
+        api_key = st.text_input("OpenAI API Key", type="password")
+        
+    client = None
+    if api_key:
+        try:
+            client = OpenAI(api_key=api_key)
+        except:
+            st.error("❌ 키 오류")
+    
+    st.markdown("---")
+    
+    region = st.selectbox("어디로 떠나볼까요?", list(seoul_db.keys()))
+    char = seoul_db[region]
+    
+    # [이미지/GIF 로딩 로직]
+    gif_path = os.path.join("images", f"{region}_{char['name']}.gif")
+    png_path = os.path.join("images", f"{region}_{char['name']}.png")
+    
+    if os.path.exists(gif_path):
+        st.image(gif_path, caption=f"살아있는 {char['name']}")
+    elif os.path.exists(png_path):
+        st.image(png_path, caption=char['name'])
+    else:
+        st.info("📸 이미지 준비 중...")
+    
+    st.info(f"**저는 {char['desc']}입니다!**")
+
+
+# -------------------------------------------------------------------------
+# [메인] 화면 구성
+# -------------------------------------------------------------------------
+youtube_url = "https://youtu.be/YIpxEgUCpmA" 
+try:
+    st.video(youtube_url, autoplay=True, muted=True, loop=True)
+except:
+    pass
+
+st.markdown(f"<h2 style='text-align: center;'>🦁 {region} AI 로컬 가이드 : {char['name']}</h2>", unsafe_allow_html=True)
+st.markdown("---")
+
+tab1, tab2, tab3 = st.tabs(["🗺️ 여행 코스 짜기 (상세ver)", "ℹ️ 실시간 안내소 (음성)", "📸 인증샷 만들기"])
+
+# --- [Tab 1] 여행 코스 ---
+with tab1:
+    st.subheader(f"🗺️ {char['name']}의 상세 코스 & 인포그래픽 지도")
+    col1, col2 = st.columns(2)
+    with col1:
+        who = st.selectbox("누구와 함께?", ["혼자", "연인과", "친구들과", "아이와 함께", "부모님 모시고"])
+    with col2:
+        theme = st.selectbox("여행 테마", ["맛집 탐방", "인생샷/카페", "역사/문화", "힐링 산책", "쇼핑/마켓"])
+
+    detail = st.text_input("추가 요청 (예: 3시간 코스, 주차 필수, 매운 거 못 먹음)")
+    
+    # 세션 상태 초기화
+    if "course_result" not in st.session_state:
+        st.session_state.course_result = ""
+    if "map_image_url" not in st.session_state:
+        st.session_state.map_image_url = ""
+
+    if st.button("🚀 상세 코스 브리핑 받기"):
+        if not client:
+            st.warning("API Key 확인 필요")
+        else:
+            with st.spinner(f"{region} 데이터를 분석 중입니다..."):
+                try:
+                    prompt = f"""
+                    당신은 {region}의 전문 가이드 '{char['name']}'입니다.
+                    사용자({who}, 테마:{theme}, 요청:{detail})를 위한 {region}의 실제 여행 코스를 아주 상세하게 작성하세요.
+                    
+                    [필수 포함 내용]
+                    1. **코스 요약:** 전체 동선 (장소A -> 장소B -> 장소C)
+                    2. **
