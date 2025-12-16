@@ -3,9 +3,9 @@ import os
 from openai import OpenAI
 
 # -------------------------------------------------------------------------
-# [설정] V10: 유튜브 스트리밍 에디션 (CEO님의 영상 링크 포함)
+# [설정] V11: 무한 반복(Loop) 에디션
 # -------------------------------------------------------------------------
-st.set_page_config(layout="wide", page_title="Seoul Haechis V10")
+st.set_page_config(layout="wide", page_title="Seoul Haechis V11")
 
 # -------------------------------------------------------------------------
 # [데이터] 25개 자치구
@@ -39,12 +39,12 @@ seoul_db = {
 }
 
 # -------------------------------------------------------------------------
-# [UI] 사이드바 (API 키 자동 로드 기능 추가)
+# [UI] 사이드바 (Secrets 자동 연동)
 # -------------------------------------------------------------------------
 with st.sidebar:
     st.title("🎛️ Control Center")
     
-    # [비밀 기능] Streamlit Secrets에서 키가 있으면 자동으로 가져옴
+    # API 키 처리
     if "OPENAI_API_KEY" in st.secrets:
         api_key = st.secrets["OPENAI_API_KEY"]
         st.success("🔐 VIP 모드: API 키 자동 인증됨")
@@ -73,16 +73,16 @@ with st.sidebar:
     st.write(char['desc'])
 
 # -------------------------------------------------------------------------
-# [메인] 화면 구성 (V10: 유튜브 링크 적용)
+# [메인] 화면 구성 (V11: 무한 반복 적용)
 # -------------------------------------------------------------------------
 
-# 1. 메인 배너 (유튜브 스트리밍)
-# CEO님의 유튜브 링크를 여기에 직접 넣었습니다.
+# 1. 메인 배너 (유튜브)
+# loop=True 옵션을 추가하여 영상이 끝나면 자동으로 처음부터 다시 시작합니다.
 youtube_url = "https://youtu.be/YIpxEgUCpmA" 
 try:
-    st.video(youtube_url, autoplay=True, muted=True)
+    st.video(youtube_url, autoplay=True, muted=True, loop=True)
 except:
-    st.error("영상을 불러오는 중입니다.")
+    st.error("영상 연결 중...")
 
 # 2. 고정 문구
 st.markdown("<h3 style='text-align: center; color: gray;'>각 지역별 AI Creator</h3>", unsafe_allow_html=True)
@@ -106,12 +106,15 @@ with tab1:
     keywords = st.text_input("소재 입력", key="story_input")
     
     if st.button("✨ 스토리 생성"):
-        if not client: st.warning("API Key가 필요합니다.")
+        if not client: st.warning("API Key가 필요합니다. (Secrets 설정을 확인하세요)")
         else:
             with st.spinner("작성 중..."):
-                prompt = f"주인공: {char['name']}({char['trait']}), 배경: {region}, 타겟: {target}, 장르: {genre}, 소재: {keywords}. 짧은 이야기 써줘."
-                resp = client.chat.completions.create(model="gpt-3.5-turbo", messages=[{"role":"user", "content":prompt}])
-                st.markdown(resp.choices[0].message.content)
+                try:
+                    prompt = f"주인공: {char['name']}({char['trait']}), 배경: {region}, 타겟: {target}, 장르: {genre}, 소재: {keywords}. 짧은 이야기 써줘."
+                    resp = client.chat.completions.create(model="gpt-3.5-turbo", messages=[{"role":"user", "content":prompt}])
+                    st.markdown(resp.choices[0].message.content)
+                except Exception as e:
+                    st.error(f"오류 발생: {e}")
 
 # --- [Tab 2] 대화 ---
 with tab2:
