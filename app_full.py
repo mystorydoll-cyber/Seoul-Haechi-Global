@@ -3,9 +3,9 @@ import os
 from openai import OpenAI
 
 # -------------------------------------------------------------------------
-# [설정] V11: 무한 반복(Loop) 에디션
+# [설정] V12: 토킹 해치 에디션 (TTS 음성 기능 탑재)
 # -------------------------------------------------------------------------
-st.set_page_config(layout="wide", page_title="Seoul Haechis V11")
+st.set_page_config(layout="wide", page_title="Seoul Haechis V12")
 
 # -------------------------------------------------------------------------
 # [데이터] 25개 자치구
@@ -39,15 +39,15 @@ seoul_db = {
 }
 
 # -------------------------------------------------------------------------
-# [UI] 사이드바 (Secrets 자동 연동)
+# [UI] 사이드바
 # -------------------------------------------------------------------------
 with st.sidebar:
     st.title("🎛️ Control Center")
     
-    # API 키 처리
+    # Secrets 자동 로드
     if "OPENAI_API_KEY" in st.secrets:
         api_key = st.secrets["OPENAI_API_KEY"]
-        st.success("🔐 VIP 모드: API 키 자동 인증됨")
+        st.success("🔐 VIP 모드: 음성 대화 가능")
     else:
         api_key = st.text_input("OpenAI API Key", type="password")
         
@@ -73,26 +73,23 @@ with st.sidebar:
     st.write(char['desc'])
 
 # -------------------------------------------------------------------------
-# [메인] 화면 구성 (V11: 무한 반복 적용)
+# [메인] 화면 구성
 # -------------------------------------------------------------------------
 
-# 1. 메인 배너 (유튜브)
-# loop=True 옵션을 추가하여 영상이 끝나면 자동으로 처음부터 다시 시작합니다.
+# 1. 메인 배너 (유튜브 무한반복)
 youtube_url = "https://youtu.be/YIpxEgUCpmA" 
 try:
     st.video(youtube_url, autoplay=True, muted=True, loop=True)
 except:
-    st.error("영상 연결 중...")
+    pass
 
-# 2. 고정 문구
-st.markdown("<h3 style='text-align: center; color: gray;'>각 지역별 AI Creator</h3>", unsafe_allow_html=True)
+# 2. 제목
+st.markdown("<h3 style='text-align: center; color: gray;'>Talk with Seoul Haechis</h3>", unsafe_allow_html=True)
 st.markdown("---")
-
-# 3. 개별 캐릭터 제목
 st.title(f"🦁 {char['name']} AI Creator")
 
 # 기능 탭
-tab1, tab2, tab3 = st.tabs(["📝 스토리 창작", "💬 캐릭터 대화", "🎨 캐릭터 변형"])
+tab1, tab2, tab3 = st.tabs(["📝 스토리 창작", "💬 캐릭터 음성 대화", "🎨 캐릭터 변형"])
 
 # --- [Tab 1] 스토리 ---
 with tab1:
@@ -106,32 +103,53 @@ with tab1:
     keywords = st.text_input("소재 입력", key="story_input")
     
     if st.button("✨ 스토리 생성"):
-        if not client: st.warning("API Key가 필요합니다. (Secrets 설정을 확인하세요)")
+        if not client: st.warning("API Key가 필요합니다.")
         else:
             with st.spinner("작성 중..."):
-                try:
-                    prompt = f"주인공: {char['name']}({char['trait']}), 배경: {region}, 타겟: {target}, 장르: {genre}, 소재: {keywords}. 짧은 이야기 써줘."
-                    resp = client.chat.completions.create(model="gpt-3.5-turbo", messages=[{"role":"user", "content":prompt}])
-                    st.markdown(resp.choices[0].message.content)
-                except Exception as e:
-                    st.error(f"오류 발생: {e}")
+                prompt = f"주인공: {char['name']}({char['trait']}), 배경: {region}, 타겟: {target}, 장르: {genre}, 소재: {keywords}. 짧은 이야기 써줘."
+                resp = client.chat.completions.create(model="gpt-3.5-turbo", messages=[{"role":"user", "content":prompt}])
+                st.markdown(resp.choices[0].message.content)
 
-# --- [Tab 2] 대화 ---
+# --- [Tab 2] 대화 (음성 기능 추가!) ---
 with tab2:
-    st.subheader("실시간 채팅")
+    st.subheader(f"🎤 {char['name']}와 목소리로 대화하기")
+    st.info("💡 팁: 채팅을 입력하면 해치가 목소리로 대답합니다!")
+    
     if "messages" not in st.session_state: st.session_state.messages = []
+    
+    # 기존 대화 기록 표시
     for m in st.session_state.messages:
         with st.chat_message(m["role"]): st.write(m["content"])
 
-    if chat_in := st.chat_input("메시지 입력..."):
+    if chat_in := st.chat_input("안녕! 넌 누구니?"):
+        # 1. 사용자 메시지 표시
         st.session_state.messages.append({"role":"user", "content":chat_in})
         with st.chat_message("user"): st.write(chat_in)
+        
         if client:
-            sys = f"너는 {region}의 {char['name']}야. 성격: {char['trait']}. 친근하게 답해."
-            resp = client.chat.completions.create(model="gpt-3.5-turbo", messages=[{"role":"system", "content":sys}] + st.session_state.messages)
-            ai_msg = resp.choices[0].message.content
-            st.session_state.messages.append({"role":"assistant", "content":ai_msg})
-            with st.chat_message("assistant"): st.write(ai_msg)
+            # 2. AI 텍스트 생성
+            with st.spinner("생각 중..."):
+                sys = f"너는 {region}의 {char['name']}야. 성격: {char['trait']}. 어린이나 친구에게 말하듯 친근하게 반말로 답해. 답변은 2~3문장으로 짧게."
+                resp = client.chat.completions.create(model="gpt-3.5-turbo", messages=[{"role":"system", "content":sys}] + st.session_state.messages)
+                ai_text = resp.choices[0].message.content
+            
+            # 3. AI 답변 표시
+            st.session_state.messages.append({"role":"assistant", "content":ai_text})
+            with st.chat_message("assistant"):
+                st.write(ai_text)
+                
+                # 4. [핵심] 음성 생성 (TTS)
+                try:
+                    speech_file_path = "speech_output.mp3"
+                    response = client.audio.speech.create(
+                        model="tts-1",
+                        voice="shimmer", # alloy, echo, fable, onyx, nova, shimmer 중 선택 가능
+                        input=ai_text
+                    )
+                    response.stream_to_file(speech_file_path)
+                    st.audio(speech_file_path) # 오디오 플레이어 표시
+                except Exception as e:
+                    st.error(f"음성 생성 실패: {e}")
 
 # --- [Tab 3] 이미지 ---
 with tab3:
