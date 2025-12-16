@@ -3,9 +3,9 @@ import os
 from openai import OpenAI
 
 # -------------------------------------------------------------------------
-# [설정] V12: 토킹 해치 에디션 (TTS 음성 기능 탑재)
+# [설정] V13: 글로벌 토킹 에디션 (다국어 + 장난꾸러기 목소리)
 # -------------------------------------------------------------------------
-st.set_page_config(layout="wide", page_title="Seoul Haechis V12")
+st.set_page_config(layout="wide", page_title="Seoul Haechis V13")
 
 # -------------------------------------------------------------------------
 # [데이터] 25개 자치구
@@ -47,7 +47,7 @@ with st.sidebar:
     # Secrets 자동 로드
     if "OPENAI_API_KEY" in st.secrets:
         api_key = st.secrets["OPENAI_API_KEY"]
-        st.success("🔐 VIP 모드: 음성 대화 가능")
+        st.success("🔐 VIP 모드: 다국어 음성 지원")
     else:
         api_key = st.text_input("OpenAI API Key", type="password")
         
@@ -110,46 +110,50 @@ with tab1:
                 resp = client.chat.completions.create(model="gpt-3.5-turbo", messages=[{"role":"user", "content":prompt}])
                 st.markdown(resp.choices[0].message.content)
 
-# --- [Tab 2] 대화 (음성 기능 추가!) ---
+# --- [Tab 2] 대화 (글로벌 음성 기능) ---
 with tab2:
-    st.subheader(f"🎤 {char['name']}와 목소리로 대화하기")
-    st.info("💡 팁: 채팅을 입력하면 해치가 목소리로 대답합니다!")
+    st.subheader(f"🎤 {char['name']}와 대화하기")
+    
+    # [NEW] 언어 선택 기능
+    lang_col, _ = st.columns([1, 2])
+    with lang_col:
+        language = st.radio("언어 선택 (Language)", ["한국어", "English", "日本語", "中文"], horizontal=True)
+
+    st.info(f"💡 {language}로 말을 걸어보세요! 해치가 목소리로 대답합니다.")
     
     if "messages" not in st.session_state: st.session_state.messages = []
     
-    # 기존 대화 기록 표시
     for m in st.session_state.messages:
         with st.chat_message(m["role"]): st.write(m["content"])
 
-    if chat_in := st.chat_input("안녕! 넌 누구니?"):
-        # 1. 사용자 메시지 표시
+    if chat_in := st.chat_input("메시지 입력..."):
         st.session_state.messages.append({"role":"user", "content":chat_in})
         with st.chat_message("user"): st.write(chat_in)
         
         if client:
-            # 2. AI 텍스트 생성
-            with st.spinner("생각 중..."):
-                sys = f"너는 {region}의 {char['name']}야. 성격: {char['trait']}. 어린이나 친구에게 말하듯 친근하게 반말로 답해. 답변은 2~3문장으로 짧게."
+            with st.spinner(f"{char['name']}가 생각 중..."):
+                # 다국어 프롬프트 적용
+                sys = f"너는 {region}의 {char['name']}야. 성격: {char['trait']}. 사용자가 선택한 언어인 '{language}'로 대답해. 말투는 친근하고 활기차게(장난꾸러기처럼). 답변은 2~3문장으로 짧게."
+                
                 resp = client.chat.completions.create(model="gpt-3.5-turbo", messages=[{"role":"system", "content":sys}] + st.session_state.messages)
                 ai_text = resp.choices[0].message.content
             
-            # 3. AI 답변 표시
             st.session_state.messages.append({"role":"assistant", "content":ai_text})
             with st.chat_message("assistant"):
                 st.write(ai_text)
                 
-                # 4. [핵심] 음성 생성 (TTS)
+                # 음성 생성 (장난꾸러기 톤: nova)
                 try:
                     speech_file_path = "speech_output.mp3"
                     response = client.audio.speech.create(
                         model="tts-1",
-                        voice="shimmer", # alloy, echo, fable, onyx, nova, shimmer 중 선택 가능
+                        voice="nova",  # [변경] 장난꾸러기 톤
                         input=ai_text
                     )
                     response.stream_to_file(speech_file_path)
-                    st.audio(speech_file_path) # 오디오 플레이어 표시
+                    st.audio(speech_file_path)
                 except Exception as e:
-                    st.error(f"음성 생성 실패: {e}")
+                    st.error(f"음성 오류: {e}")
 
 # --- [Tab 3] 이미지 ---
 with tab3:
