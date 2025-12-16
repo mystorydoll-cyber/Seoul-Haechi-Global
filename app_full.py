@@ -3,9 +3,9 @@ import os
 from openai import OpenAI
 
 # -------------------------------------------------------------------------
-# [설정] V9: 동영상 배너 기능 탑재 (제목 확인!)
+# [설정] V10: 유튜브 스트리밍 에디션 (CEO님의 영상 링크 포함)
 # -------------------------------------------------------------------------
-st.set_page_config(layout="wide", page_title="Seoul Haechis V9")
+st.set_page_config(layout="wide", page_title="Seoul Haechis V10")
 
 # -------------------------------------------------------------------------
 # [데이터] 25개 자치구
@@ -39,18 +39,25 @@ seoul_db = {
 }
 
 # -------------------------------------------------------------------------
-# [UI] 사이드바
+# [UI] 사이드바 (API 키 자동 로드 기능 추가)
 # -------------------------------------------------------------------------
 with st.sidebar:
     st.title("🎛️ Control Center")
-    api_key = st.text_input("OpenAI API Key", type="password")
+    
+    # [비밀 기능] Streamlit Secrets에서 키가 있으면 자동으로 가져옴
+    if "OPENAI_API_KEY" in st.secrets:
+        api_key = st.secrets["OPENAI_API_KEY"]
+        st.success("🔐 VIP 모드: API 키 자동 인증됨")
+    else:
+        api_key = st.text_input("OpenAI API Key", type="password")
+        
     client = None
     if api_key:
         try:
             client = OpenAI(api_key=api_key)
-            st.success("✅ AI 엔진 가동 중")
         except:
             st.error("❌ 키 오류")
+    
     st.markdown("---")
     
     # 25개 리스트
@@ -66,21 +73,16 @@ with st.sidebar:
     st.write(char['desc'])
 
 # -------------------------------------------------------------------------
-# [메인] 화면 구성 (V9: 동영상 배너 로직)
+# [메인] 화면 구성 (V10: 유튜브 링크 적용)
 # -------------------------------------------------------------------------
 
-# 1. 메인 배너 (비디오 우선, 없으면 이미지)
-video_path = os.path.join("images", "main_video.mp4")
-image_path = os.path.join("images", "main_map.png")
-
-if os.path.exists(video_path):
-    # 비디오가 있으면 재생 (자동재생, 반복, 음소거)
-    st.video(video_path, autoplay=True, loop=True, muted=True)
-elif os.path.exists(image_path):
-    # 비디오가 없으면 기존 이미지 표시
-    st.image(image_path, use_container_width=True)
-else:
-    st.info("🎥 'images' 폴더에 'main_video.mp4' 파일을 넣어주세요.")
+# 1. 메인 배너 (유튜브 스트리밍)
+# CEO님의 유튜브 링크를 여기에 직접 넣었습니다.
+youtube_url = "https://youtu.be/YIpxEgUCpmA" 
+try:
+    st.video(youtube_url, autoplay=True, muted=True)
+except:
+    st.error("영상을 불러오는 중입니다.")
 
 # 2. 고정 문구
 st.markdown("<h3 style='text-align: center; color: gray;'>각 지역별 AI Creator</h3>", unsafe_allow_html=True)
@@ -104,7 +106,7 @@ with tab1:
     keywords = st.text_input("소재 입력", key="story_input")
     
     if st.button("✨ 스토리 생성"):
-        if not client: st.warning("API Key 필요")
+        if not client: st.warning("API Key가 필요합니다.")
         else:
             with st.spinner("작성 중..."):
                 prompt = f"주인공: {char['name']}({char['trait']}), 배경: {region}, 타겟: {target}, 장르: {genre}, 소재: {keywords}. 짧은 이야기 써줘."
@@ -135,7 +137,7 @@ with tab3:
     desc_input = st.text_input("상황 설명", key="img_input")
     
     if st.button("🖌️ 이미지 만들기"):
-        if not client: st.error("API Key 필요")
+        if not client: st.error("API Key가 필요합니다.")
         else:
             with st.spinner("그리는 중..."):
                 try:
