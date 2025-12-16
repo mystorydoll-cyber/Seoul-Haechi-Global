@@ -119,4 +119,96 @@ with tab1:
                     
                     [필수 포함 내용]
                     1. **코스 요약:** 전체 동선 (장소A -> 장소B -> 장소C)
-                    2. **
+                    2. **상세 안내 (장소별):**
+                       - **장소명 (실제 상호/명소):** - **추천 이유 & 특징:**
+                       - **운영 정보:** (시간, 휴무일)
+                       - **꿀팁:**
+                       - **이동 방법:**
+                    3. **마무리 멘트:** {char['trait']} 성격을 살린 인사말.
+                    
+                    출력 형식: 마크다운(Markdown).
+                    """
+                    resp = client.chat.completions.create(model="gpt-3.5-turbo", messages=[{"role":"user", "content":prompt}])
+                    st.session_state.course_result = resp.choices[0].message.content
+                    st.session_state.map_image_url = "" 
+                except Exception as e:
+                    st.error(f"오류: {e}")
+
+    if st.session_state.course_result:
+        st.markdown(st.session_state.course_result)
+        st.markdown("---")
+        st.subheader("🗺️ 이 코스를 지도로 보기")
+        
+        if st.button("🎨 AI 인포그래픽 지도 그리기"):
+            if not client:
+                st.warning("API Key 필요")
+            else:
+                with st.spinner("AI 화가가 지도를 그리는 중..."):
+                    try:
+                        summary_prompt = f"Summarize this travel course in Seoul {region} into a list of locations: {st.session_state.course_result[:500]}"
+                        summary_resp = client.chat.completions.create(model="gpt-3.5-turbo", messages=[{"role":"user", "content":summary_prompt}])
+                        locations = summary_resp.choices[0].message.content
+                        
+                        image_prompt = f"A cute tourist map infographic of Seoul {region}. Path connecting: {locations}. Character '{char['name']}'. **Text labels must be clear.** High quality."
+                        res = client.images.generate(model="dall-e-3", prompt=image_prompt, size="1024x1024", quality="standard", n=1)
+                        st.session_state.map_image_url = res.data[0].url
+                    except Exception as e:
+                        st.error(f"지도 실패: {e}")
+
+    if st.session_state.map_image_url:
+        st.image(st.session_state.map_image_url, caption=f"{region} 여행 지도")
+
+# --- [Tab 2] 실시간 안내소 (음성) ---
+with tab2:
+    st.subheader(f"🎤 {char['name']}에게 물어보세요")
+    lang_col, _ = st.columns([1, 2])
+    with lang_col:
+        language = st.radio("Language", ["한국어", "English", "日本語", "中文"], horizontal=True)
+    
+    if "messages" not in st.session_state:
+        st.session_state.messages = []
+        
+    # [수정 완료] 한 줄씩 풀어서 에러 원천 차단
+    for m in st.session_state.messages:
+        with st.chat_message(m["role"]):
+            st.write(m["content"])
+
+    if chat_in := st.chat_input("질문 입력..."):
+        st.session_state.messages.append({"role":"user", "content":chat_in})
+        with st.chat_message("user"):
+            st.write(chat_in)
+            
+        if client:
+            with st.spinner("생각 중..."):
+                sys = f"너는 {region} 가이드 '{char['name']}'. 언어:{language}. 톤:{char['trait']}하고 활기참."
+                resp = client.chat.completions.create(model="gpt-3.5-turbo", messages=[{"role":"system", "content":sys}] + st.session_state.messages)
+                ai_text = resp.choices[0].message.content
+            
+            st.session_state.messages.append({"role":"assistant", "content":ai_text})
+            
+            with st.chat_message("assistant"):
+                st.write(ai_text)
+                try:
+                    response = client.audio.speech.create(model="tts-1", voice="nova", input=ai_text)
+                    response.stream_to_file("speech.mp3")
+                    st.audio("speech.mp3")
+                except:
+                    pass
+
+# --- [Tab 3] 인증샷 ---
+with tab3:
+    st.subheader(f"📸 {char['name']}와 함께 찰칵")
+    style = st.selectbox("화풍 선택", ["웹툰 스타일", "수채화", "실사 풍경", "3D 캐릭터"])
+    desc_input = st.text_input("상황 설명", key="img_input")
+    
+    if st.button("🖌️ 기념사진 생성"):
+        if not client:
+            st.error("API Key 필요")
+        else:
+            with st.spinner("사진 인화 중..."):
+                try:
+                    p = f"Character '{char['name']}' in Seoul {region}, {desc_input}. Style: {style}."
+                    res = client.images.generate(model="dall-e-3", prompt=p, size="1024x1024", quality="standard", n=1)
+                    st.image(res.data[0].url)
+                except Exception as e:
+                    st.error(f"실패: {e}")
