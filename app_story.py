@@ -1,9 +1,10 @@
 import streamlit as st
 import os
+import random
 from openai import OpenAI
 
 # -------------------------------------------------------------------------
-# [설정] V26: 서울 해치 탐험 (Brand Renewal)
+# [설정] V28: 서울 해치 탐험 (Root Image Fix)
 # -------------------------------------------------------------------------
 st.set_page_config(
     layout="wide",
@@ -74,7 +75,7 @@ seoul_db = {
 }
 
 # -------------------------------------------------------------------------
-# [로직] 사용자 프로필 관리 (Session State)
+# [로직] 사용자 프로필 관리
 # -------------------------------------------------------------------------
 if "user_profile" not in st.session_state:
     st.session_state.user_profile = None
@@ -83,14 +84,26 @@ if "user_profile" not in st.session_state:
 # [화면 1] 인트로: 사용자 정보 입력 (첫 화면)
 # -------------------------------------------------------------------------
 if st.session_state.user_profile is None:
-    # [수정] 타이틀 변경
     st.title("🦁 서울 해치 탐험 : 입단 신청서")
     st.markdown("### \"안녕? 나는 서울을 지키는 해치야. 너에 대해 알려줄래?\"")
     
     col1, col2 = st.columns(2)
     with col1:
-        st.image("https://raw.githubusercontent.com/mystorydoll-cyber/243-local-story/main/images/intro_haechi.png", caption="어서 오시오!", use_column_width=True)
-        
+        # [수정] intro 폴더가 아니라 '현재 폴더(.)'에서 png 찾기
+        try:
+            current_dir = "."
+            # 현재 폴더에 있는 png 파일들만 싹 긁어모으기
+            intro_images = [f for f in os.listdir(current_dir) if f.lower().endswith('.png')]
+            
+            if intro_images:
+                selected_img = random.choice(intro_images) # 랜덤 뽑기
+                st.image(selected_img, caption="어서 오시오! 우리는 서울의 수호신 해치라네.", use_column_width=True)
+            else:
+                st.info("해치들이 단장 중이오. (이미지 없음)")
+                
+        except Exception as e:
+             st.error(f"알림: 이미지 로딩 중 문제 발생 ({e})")
+
     with col2:
         with st.form("intro_form"):
             name = st.text_input("이름 (Name)", placeholder="길동이")
@@ -98,7 +111,7 @@ if st.session_state.user_profile is None:
             gender = st.radio("성별 (Gender)", ["남성", "여성", "기타"])
             nationality = st.selectbox("국적 (Nationality)", ["대한민국", "USA", "China", "Japan", "France", "Germany", "Other"])
             
-            submitted = st.form_submit_button("🚀 해치 만나러 가기 (Start Adventure)")
+            submitted = st.form_submit_button("🚀 해치 만나러 가기")
             
             if submitted and name:
                 st.session_state.user_profile = {
@@ -126,7 +139,7 @@ else:
             st.rerun()
         st.markdown("---")
         
-        # [기능] 실시간 언어 변경
+        # 언어 선택
         st.markdown("### 🌐 언어 모드 (Language)")
         lang_options = ["한국어", "English", "中文 (Chinese)", "日本語 (Japanese)", "Français (French)", "Deutsch (German)"]
         
@@ -153,6 +166,7 @@ else:
             st.subheader(f"✨ {char['name']}")
             st.caption(f"{char['role']}")
             
+            # [이미지] 현재 폴더에 있는 파일 찾기
             img_name = f"{region}_{char['name']}.png"
             if os.path.exists(img_name):
                 st.image(img_name)
@@ -160,7 +174,6 @@ else:
                 st.info(f"📸 {char['visual']}")
             st.markdown(f"**🔑 키워드:** {char['keyword']}")
 
-    # [수정] 메인 헤더 (전설 탐험 -> 해치 탐험)
     st.markdown(f"# 🗺️ {region} 해치 탐험 : {char['name']}와의 만남")
     
     if client and "welcome_msg" not in st.session_state:
@@ -168,7 +181,7 @@ else:
     st.info(f"👋 **{char['name']}**: \"어서 와, {user['name']}! ({selected_lang} 모드 작동 중)\"")
     st.markdown("---")
 
-    tab1, tab2, tab3, tab4 = st.tabs(["📜 전설 듣기", "🗣️ 수다 떨기 (Global Chat)", "🎨 삽화 그리기", "✍️ 나도 전설 작가"])
+    tab1, tab2, tab3, tab4 = st.tabs(["📜 전설 듣기", "🗣️ 수다 떨기", "🎨 삽화 그리기", "✍️ 나도 전설 작가"])
 
     # [Tab 1] 전설 듣기
     with tab1:
@@ -222,9 +235,7 @@ else:
                 sys_prompt = f"""
                 당신은 '{char['name']}'입니다. ({char['personality']}, {char['speech']})
                 상대방: {user['age']}세 {user['nationality']} {user['name']}
-                
                 **중요: 반드시 {selected_lang}로 대화하세요.**
-                언어가 바뀌어도 당신의 캐릭터(말투, 성격)를 잃지 마세요.
                 """
                 response = client.chat.completions.create(
                     model="gpt-4",
