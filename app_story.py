@@ -195,4 +195,31 @@ with tab3:
 # [Tab 4] 나만의 전설 만들기 (신규 기능)
 with tab4:
     st.subheader("👑 내가 만드는 새로운 전설")
-    st.write(
+    st.write(f"**{char['name']}**가 주인공인 새로운 이야기를 만들어보세요!")
+    
+    col1, col2 = st.columns(2)
+    with col1:
+        user_name = st.text_input("작가님 이름 (Your Name)")
+    with col2:
+        keywords = st.text_input("이야기 소재 (예: 좀비, 지하철, 아이돌)")
+        
+    if st.button("✨ 새 전설 창작하기"):
+        if not client: st.warning("API Key 필요")
+        elif not keywords: st.warning("소재를 입력해주세요!")
+        else:
+            with st.spinner("해치가 머리를 굴리는 중..."):
+                prompt = f"""
+                당신은 동화 작가입니다.
+                주인공: {char['name']} ({char['role']})
+                원래 배경: {char['story']}
+                
+                [요청]: 위 주인공이 등장하는 새로운 짧은 동화를 지어주세요.
+                [필수 소재]: {keywords}
+                [작가 이름]: {user_name}
+                
+                이야기는 아주 흥미진진하고 유머러스하게 써주세요.
+                마지막에는 "{user_name} 작가님의 상상력, 대단하오!" 처럼 칭찬 멘트를 덧붙여주세요.
+                """
+                resp = client.chat.completions.create(model="gpt-4", messages=[{"role":"user", "content":prompt}])
+                st.success(f"🎉 {user_name} 작가님의 신작 발표!")
+                st.markdown(resp.choices[0].message.content)
