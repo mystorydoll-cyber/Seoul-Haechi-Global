@@ -275,4 +275,16 @@ else:
         st.subheader("👑 내가 만드는 새로운 전설")
         col1, col2 = st.columns(2)
         with col1: user_name = st.text_input("작가님 이름", value=user['name'])
-        with col2: keywords = st.text_input("소
+        with col2: keywords = st.text_input("소재 (예: AI, 우주선)")
+            
+        if st.button("✨ 새 전설 창작하기"):
+            if client and keywords:
+                with st.spinner("창작 중..."):
+                    prompt = f"""
+                    작가: {user_name} ({user['age']}세)
+                    주인공: {char['name']}
+                    소재: {keywords}
+                    {user['age']}세 작가의 눈높이에 맞는 재미있는 동화를 써주세요.
+                    """
+                    resp = client.chat.completions.create(model="gpt-4", messages=[{"role":"user", "content":prompt}])
+                    st.write(resp.choices[0].message.content)
