@@ -1,10 +1,9 @@
 import streamlit as st
 import os
-import random
 from openai import OpenAI
 
 # -------------------------------------------------------------------------
-# [설정] V31: 서울 해치 탐험 (Gallery Intro)
+# [설정] V32: 서울 해치 탐험 (Hero Gallery Layout)
 # -------------------------------------------------------------------------
 st.set_page_config(
     layout="wide",
@@ -81,32 +80,39 @@ if "user_profile" not in st.session_state:
     st.session_state.user_profile = None
 
 # -------------------------------------------------------------------------
-# [화면 1] 인트로: 사용자 정보 입력 (갤러리 모드)
+# [화면 1] 인트로: 사용자 정보 입력 (Hero + Gallery 모드)
 # -------------------------------------------------------------------------
 if st.session_state.user_profile is None:
     st.title("🦁 서울 해치 탐험 : 입단 신청서")
-    st.markdown("### \"안녕? 나는 서울을 지키는 해치야. 너에 대해 알려줄래?\"")
     
-    col1, col2 = st.columns([1.5, 1]) # 이미지 쪽에 조금 더 넓은 공간 할당
+    col1, col2 = st.columns([1.6, 1]) # 이미지 공간을 좀 더 넓게
     with col1:
-        st.info("👇 우리가 서울을 지키는 해치들이야!")
+        st.markdown("### \"안녕? 우리는 서울을 지키는 해치 군단이야!\"")
         
-        # [수정] intro 폴더의 모든 이미지를 갤러리처럼 보여주기
+        # [핵심 로직] 메인 이미지와 나머지 구분하기
         intro_dir = "intro"
+        main_image_name = "main.png" # ★ 이 이름의 파일을 찾습니다! (jpg면 main.jpg로 수정)
+
         try:
             if os.path.exists(intro_dir):
-                intro_images = [f for f in os.listdir(intro_dir) if f.lower().endswith(('.png', '.jpg', '.jpeg'))]
+                all_images = [f for f in os.listdir(intro_dir) if f.lower().endswith(('.png', '.jpg', '.jpeg'))]
                 
-                if intro_images:
-                    # 3열(Grid)로 나누기
-                    cols = st.columns(3) 
-                    for i, img_file in enumerate(intro_images):
-                        img_path = os.path.join(intro_dir, img_file)
-                        # 순서대로 칸에 집어넣기
+                # 1. 메인(Hero) 이미지 크게 보여주기
+                if main_image_name in all_images:
+                    st.image(os.path.join(intro_dir, main_image_name), use_column_width=True)
+                    st.markdown("---") # 구분선
+                
+                # 2. 나머지 이미지들 3단 갤러리로 보여주기
+                other_images = [img for img in all_images if img != main_image_name]
+                if other_images:
+                    st.caption("👇 더 많은 친구들을 소개할게!")
+                    cols = st.columns(3)
+                    for i, img_file in enumerate(other_images):
                         with cols[i % 3]:
-                            st.image(img_path, use_column_width=True)
-                else:
-                    st.warning("해치들이 아직 도착하지 않았소. (intro 폴더가 비어있음)")
+                            st.image(os.path.join(intro_dir, img_file), use_column_width=True)
+                elif not main_image_name in all_images and not other_images:
+                     st.warning("해치들이 아직 도착하지 않았소. (intro 폴더 비어있음)")
+
             else:
                  st.warning("아직 'intro' 폴더가 없군요.")
                  
@@ -114,16 +120,18 @@ if st.session_state.user_profile is None:
              st.error(f"이미지 로딩 오류: {e}")
 
     with col2:
+        # 오른쪽 입력 폼 디자인 개선
         with st.container(border=True):
-            st.markdown("#### 📝 탐험가 등록")
+            st.markdown("#### 📝 탐험대원 등록")
+            st.caption("너에 대해 알려주면 딱 맞는 해치를 소개해줄게!")
             with st.form("intro_form"):
                 name = st.text_input("이름 (Name)", placeholder="길동이")
                 age = st.slider("나이 (Age)", 5, 100, 25)
                 gender = st.radio("성별 (Gender)", ["남성", "여성", "기타"])
                 nationality = st.selectbox("국적 (Nationality)", ["대한민국", "USA", "China", "Japan", "France", "Germany", "Other"])
                 
-                st.markdown("---")
-                submitted = st.form_submit_button("🚀 해치 만나러 가기", type="primary", use_container_width=True)
+                st.markdown("") # 여백
+                submitted = st.form_submit_button("🚀 해치 만나러 가기 (Start)", type="primary", use_container_width=True)
                 
                 if submitted and name:
                     st.session_state.user_profile = {
@@ -137,7 +145,7 @@ if st.session_state.user_profile is None:
                     st.error("이름을 알려줘야 시작할 수 있어!")
 
 # -------------------------------------------------------------------------
-# [화면 2] 메인 앱
+# [화면 2] 메인 앱 (변동 없음)
 # -------------------------------------------------------------------------
 else:
     user = st.session_state.user_profile
@@ -178,7 +186,6 @@ else:
             st.subheader(f"✨ {char['name']}")
             st.caption(f"{char['role']}")
             
-            # [기존] 사이드바 이미지는 루트(Root)에서 찾음
             img_name = f"{region}_{char['name']}.png"
             if os.path.exists(img_name):
                 st.image(img_name)
