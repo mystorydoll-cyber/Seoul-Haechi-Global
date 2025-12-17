@@ -3,7 +3,7 @@ import os
 from openai import OpenAI
 
 # -------------------------------------------------------------------------
-# [설정] V22: 서울 전설 탐험대 (Global Story Edition)
+# [설정] V23: 서울 전설 탐험대 (Global Creator Edition)
 # -------------------------------------------------------------------------
 st.set_page_config(
     layout="wide",
@@ -12,7 +12,7 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# # -------------------------------------------------------------------------
+# -------------------------------------------------------------------------
 # [데이터] CEO 원천 소스 반영 (종로, 중구, 용산, 성동, 광진)
 # -------------------------------------------------------------------------
 seoul_db = {
@@ -74,11 +74,11 @@ seoul_db = {
 }
 
 # -------------------------------------------------------------------------
-# [UI] 사이드바 & 설정
+# [UI] 사이드바 & 다국어 설정
 # -------------------------------------------------------------------------
 with st.sidebar:
     st.title("🦁 서울 전설 탐험대")
-    st.caption("Seoul Legend Expedition V22")
+    st.caption("Seoul Legend Expedition V23")
     st.markdown("---")
     
     # API 키 입력
@@ -89,95 +89,26 @@ with st.sidebar:
     
     client = OpenAI(api_key=api_key) if api_key else None
     
+    # [기능 1] 다국어 지원 설정
+    st.markdown("### 🌍 언어 선택 (Language)")
+    lang_code = st.selectbox(
+        "어떤 언어로 대화할까요?",
+        ["한국어", "English", "中文 (Chinese)", "日本語 (Japanese)", "Français (French)", "Deutsch (German)"]
+    )
+    
     st.markdown("### 📍 탐험할 지역 선택")
     region = st.selectbox("어느 구의 전설을 들을까?", list(seoul_db.keys()))
     char = seoul_db[region]
     
-    # [캐릭터 카드] 9대 속성 반영
+    # 캐릭터 카드
     with st.container(border=True):
         st.subheader(f"✨ {char['name']}")
-        st.caption(f"Role: {char['role']}")
+        st.caption(f"{char['role']}")
         
-        # 이미지 (파일명 매칭: 종로구_초롱해치.png)
         img_name = f"{region}_{char['name']}.png"
         if os.path.exists(img_name):
             st.image(img_name)
         else:
             st.info(f"📸 {char['visual']}")
             
-        st.success(f"💬 \"{char['welcome']}\"")
-        st.markdown(f"**🔑 키워드:** {char['keyword']}")
-        st.markdown(f"**🎒 아이템:** {char['item']}")
-
-# -------------------------------------------------------------------------
-# [메인] 콘텐츠 탭
-# -------------------------------------------------------------------------
-st.markdown(f"# 🗺️ {region} 전설 탐험 : {char['name']}와의 만남")
-st.markdown("### \"내가 겪은 진짜 이야기를 들려줄게!\"")
-st.markdown("---")
-
-tab1, tab2, tab3 = st.tabs(["📜 전설 이야기", "🎭 실시간 대화", "🎨 삽화 그리기"])
-
-# [Tab 1] 전설 이야기 생성 (Prompt 업그레이드)
-with tab1:
-    st.subheader(f"📖 {char['name']}의 비하인드 스토리")
-    if st.button("▶️ 전설 듣기", type="primary"):
-        if not client: st.warning("API Key가 필요해!")
-        else:
-            with st.spinner("이야기 보따리를 푸는 중..."):
-                prompt = f"""
-                당신은 {region}의 캐릭터 '{char['name']}'입니다.
-                [성격]: {char['personality']}
-                [말투/말버릇]: {char['speech']} (이 말투를 반드시 유지하세요!)
-                [배경설정]: {char['story']}
-                
-                위 설정을 바탕으로, 사용자에게 당신의 전설 이야기를 1인칭 시점으로 들려주세요.
-                상황 묘사는 생생하게 하고, 중간중간 당신의 말버릇을 넣어주세요.
-                """
-                resp = client.chat.completions.create(model="gpt-4", messages=[{"role":"user", "content":prompt}])
-                st.write(resp.choices[0].message.content)
-
-# [Tab 2] 실시간 대화 (Prompt 업그레이드)
-with tab2:
-    st.subheader(f"🎭 {char['name']}와 수다 떨기")
-    st.info(f"팁: {char['name']}는 **{char['speech']}**를 씁니다!")
-
-    if "rp_messages" not in st.session_state:
-        st.session_state.rp_messages = []
-        
-    for m in st.session_state.rp_messages:
-        with st.chat_message(m["role"]): st.write(m["content"])
-            
-    if user_input := st.chat_input("말을 걸어보세요..."):
-        st.session_state.rp_messages.append({"role": "user", "content": user_input})
-        with st.chat_message("user"): st.write(user_input)
-        
-        if client:
-            sys_prompt = f"""
-            당신은 '{char['name']}'입니다.
-            성격: {char['personality']}
-            말투 지시문: {char['speech']}
-            핵심 키워드: {char['keyword']}
-            
-            사용자와 친구처럼 대화하되, 위 성격과 말투를 절대 잃지 마세요.
-            """
-            response = client.chat.completions.create(
-                model="gpt-4",
-                messages=[{"role": "system", "content": sys_prompt}] + st.session_state.rp_messages
-            )
-            ai_reply = response.choices[0].message.content
-            st.session_state.rp_messages.append({"role": "assistant", "content": ai_reply})
-            with st.chat_message("assistant"): st.write(ai_reply)
-
-# [Tab 3] 이미지 생성
-with tab3:
-    st.subheader("🎨 상상화 그리기")
-    scene = st.text_input("어떤 장면을 그릴까요? (예: 커피 마시는 뚝해치)")
-    if st.button("그림 생성"):
-        if client:
-            with st.spinner("그리는 중..."):
-                p = f"Illustration of {char['name']} ({char['visual']}), Style: Children's book art. Scene: {scene}"
-                try:
-                    res = client.images.generate(model="dall-e-3", prompt=p, size="1024x1024")
-                    st.image(res.data[0].url)
-                except: st.error("이미지 생성 오류")
+        st
