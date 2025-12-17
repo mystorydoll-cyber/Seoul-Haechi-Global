@@ -111,4 +111,88 @@ with st.sidebar:
         else:
             st.info(f"📸 {char['visual']}")
             
-        st
+        st.success(f"💬 \"{char['welcome']}\"")
+        st.markdown(f"**🔑 키워드:** {char['keyword']}")
+
+# -------------------------------------------------------------------------
+# [메인] 탭 구성 (4개 탭)
+# -------------------------------------------------------------------------
+st.markdown(f"# 🗺️ {region} 전설 탐험 : {char['name']}와의 만남")
+st.markdown(f"### \"{char['welcome']}\"")
+st.markdown("---")
+
+tab1, tab2, tab3, tab4 = st.tabs(["📜 전설 듣기", "🗣️ 수다 떨기 (Global Chat)", "🎨 삽화 그리기", "✍️ 나도 전설 작가"])
+
+# [Tab 1] 전설 이야기
+with tab1:
+    st.subheader(f"📖 {char['name']}의 비하인드 스토리")
+    st.write(f"**배경:** {char['story']}")  # 원문 텍스트 표시
+    
+    if st.button("▶️ AI 성우가 읽어주기 (TTS)", type="primary"):
+        if not client: st.warning("API Key 필요")
+        else:
+            with st.spinner("목소리 가다듬는 중..."):
+                try:
+                    # 텍스트가 너무 길면 요약해서 읽기
+                    response = client.audio.speech.create(
+                        model="tts-1",
+                        voice="onyx",
+                        input=char['story'][:4096]
+                    )
+                    response.stream_to_file("story_audio.mp3")
+                    st.audio("story_audio.mp3")
+                except Exception as e:
+                    st.error(f"오류: {e}")
+
+# [Tab 2] 다국어 프리토킹 (업그레이드)
+with tab2:
+    st.subheader(f"🌍 {char['name']}와 {lang_code}로 대화하기")
+    st.info(f"지금 {char['name']}는 **{lang_code}**를 완벽하게 구사하며, **{char['speech']}** 말투를 유지합니다!")
+
+    if "rp_messages" not in st.session_state:
+        st.session_state.rp_messages = []
+        
+    for m in st.session_state.rp_messages:
+        with st.chat_message(m["role"]): st.write(m["content"])
+            
+    if user_input := st.chat_input(f"{lang_code}로 말을 걸어보세요..."):
+        st.session_state.rp_messages.append({"role": "user", "content": user_input})
+        with st.chat_message("user"): st.write(user_input)
+        
+        if client:
+            # 다국어 페르소나 프롬프트
+            sys_prompt = f"""
+            당신은 '{char['name']}'입니다.
+            [성격]: {char['personality']}
+            [원래 말투]: {char['speech']}
+            [설정]: {char['story']}
+            
+            [미션]: 사용자와 대화하되, 반드시 **{lang_code}**로 답변하세요.
+            단, 언어가 바뀌어도 당신 특유의 '말투'나 '성격' 느낌은 살려야 합니다.
+            (예: 사극 톤이라면 영어에서도 고어(Thee, Thou)를 쓰거나 점잖게 표현)
+            """
+            response = client.chat.completions.create(
+                model="gpt-4",
+                messages=[{"role": "system", "content": sys_prompt}] + st.session_state.rp_messages
+            )
+            ai_reply = response.choices[0].message.content
+            st.session_state.rp_messages.append({"role": "assistant", "content": ai_reply})
+            with st.chat_message("assistant"): st.write(ai_reply)
+
+# [Tab 3] 이미지 생성
+with tab3:
+    st.subheader("🎨 상상화 그리기")
+    scene = st.text_input("어떤 장면을 그릴까요? (예: 떡볶이 먹는 해치)")
+    if st.button("그림 생성"):
+        if client:
+            with st.spinner("그리는 중..."):
+                p = f"Illustration of {char['name']} ({char['visual']}), Style: Children's book art. Scene: {scene}"
+                try:
+                    res = client.images.generate(model="dall-e-3", prompt=p, size="1024x1024")
+                    st.image(res.data[0].url)
+                except: st.error("이미지 생성 오류")
+
+# [Tab 4] 나만의 전설 만들기 (신규 기능)
+with tab4:
+    st.subheader("👑 내가 만드는 새로운 전설")
+    st.write(
