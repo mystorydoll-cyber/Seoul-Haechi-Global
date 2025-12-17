@@ -4,7 +4,7 @@ import random
 from openai import OpenAI
 
 # -------------------------------------------------------------------------
-# [설정] V30: 서울 해치 탐험 (Path Fixed)
+# [설정] V31: 서울 해치 탐험 (Gallery Intro)
 # -------------------------------------------------------------------------
 st.set_page_config(
     layout="wide",
@@ -81,52 +81,60 @@ if "user_profile" not in st.session_state:
     st.session_state.user_profile = None
 
 # -------------------------------------------------------------------------
-# [화면 1] 인트로: 사용자 정보 입력 (첫 화면)
+# [화면 1] 인트로: 사용자 정보 입력 (갤러리 모드)
 # -------------------------------------------------------------------------
 if st.session_state.user_profile is None:
     st.title("🦁 서울 해치 탐험 : 입단 신청서")
     st.markdown("### \"안녕? 나는 서울을 지키는 해치야. 너에 대해 알려줄래?\"")
     
-    col1, col2 = st.columns(2)
+    col1, col2 = st.columns([1.5, 1]) # 이미지 쪽에 조금 더 넓은 공간 할당
     with col1:
-        # [수정] CEO님이 만드신 'intro' 폴더(루트 경로)를 바라보게 수정!
-        intro_dir = "intro" 
+        st.info("👇 우리가 서울을 지키는 해치들이야!")
+        
+        # [수정] intro 폴더의 모든 이미지를 갤러리처럼 보여주기
+        intro_dir = "intro"
         try:
             if os.path.exists(intro_dir):
-                # 폴더 내의 이미지 파일 찾기
                 intro_images = [f for f in os.listdir(intro_dir) if f.lower().endswith(('.png', '.jpg', '.jpeg'))]
                 
                 if intro_images:
-                    selected_img = random.choice(intro_images)
-                    img_path = os.path.join(intro_dir, selected_img)
-                    st.image(img_path, caption="어서 오시오! 다양한 해치가 당신을 기다린다네.", use_column_width=True)
+                    # 3열(Grid)로 나누기
+                    cols = st.columns(3) 
+                    for i, img_file in enumerate(intro_images):
+                        img_path = os.path.join(intro_dir, img_file)
+                        # 순서대로 칸에 집어넣기
+                        with cols[i % 3]:
+                            st.image(img_path, use_column_width=True)
                 else:
-                    st.info("해치들이 아직 도착하지 않았소. (intro 폴더가 비어있음)")
+                    st.warning("해치들이 아직 도착하지 않았소. (intro 폴더가 비어있음)")
             else:
-                 st.info("아직 'intro' 폴더가 없군요. (경로 확인 필요)")
+                 st.warning("아직 'intro' 폴더가 없군요.")
                  
         except Exception as e:
              st.error(f"이미지 로딩 오류: {e}")
 
     with col2:
-        with st.form("intro_form"):
-            name = st.text_input("이름 (Name)", placeholder="길동이")
-            age = st.slider("나이 (Age)", 5, 100, 25)
-            gender = st.radio("성별 (Gender)", ["남성", "여성", "기타"])
-            nationality = st.selectbox("국적 (Nationality)", ["대한민국", "USA", "China", "Japan", "France", "Germany", "Other"])
-            
-            submitted = st.form_submit_button("🚀 해치 만나러 가기")
-            
-            if submitted and name:
-                st.session_state.user_profile = {
-                    "name": name,
-                    "age": age,
-                    "gender": gender,
-                    "nationality": nationality
-                }
-                st.rerun()
-            elif submitted and not name:
-                st.error("이름을 알려줘야 시작할 수 있어!")
+        with st.container(border=True):
+            st.markdown("#### 📝 탐험가 등록")
+            with st.form("intro_form"):
+                name = st.text_input("이름 (Name)", placeholder="길동이")
+                age = st.slider("나이 (Age)", 5, 100, 25)
+                gender = st.radio("성별 (Gender)", ["남성", "여성", "기타"])
+                nationality = st.selectbox("국적 (Nationality)", ["대한민국", "USA", "China", "Japan", "France", "Germany", "Other"])
+                
+                st.markdown("---")
+                submitted = st.form_submit_button("🚀 해치 만나러 가기", type="primary", use_container_width=True)
+                
+                if submitted and name:
+                    st.session_state.user_profile = {
+                        "name": name,
+                        "age": age,
+                        "gender": gender,
+                        "nationality": nationality
+                    }
+                    st.rerun()
+                elif submitted and not name:
+                    st.error("이름을 알려줘야 시작할 수 있어!")
 
 # -------------------------------------------------------------------------
 # [화면 2] 메인 앱
@@ -267,16 +275,4 @@ else:
         st.subheader("👑 내가 만드는 새로운 전설")
         col1, col2 = st.columns(2)
         with col1: user_name = st.text_input("작가님 이름", value=user['name'])
-        with col2: keywords = st.text_input("소재 (예: AI, 우주선)")
-            
-        if st.button("✨ 새 전설 창작하기"):
-            if client and keywords:
-                with st.spinner("창작 중..."):
-                    prompt = f"""
-                    작가: {user_name} ({user['age']}세)
-                    주인공: {char['name']}
-                    소재: {keywords}
-                    {user['age']}세 작가의 눈높이에 맞는 재미있는 동화를 써주세요.
-                    """
-                    resp = client.chat.completions.create(model="gpt-4", messages=[{"role":"user", "content":prompt}])
-                    st.write(resp.choices[0].message.content)
+        with col2: keywords = st.text_input("소
