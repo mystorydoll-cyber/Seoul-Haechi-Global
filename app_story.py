@@ -3,7 +3,7 @@ import os
 from openai import OpenAI
 
 # -------------------------------------------------------------------------
-# [설정] V23: 서울 전설 탐험대 (Global Creator Edition)
+# [설정] V24: 서울 전설 탐험대 (Personalized Edition)
 # -------------------------------------------------------------------------
 st.set_page_config(
     layout="wide",
@@ -13,7 +13,7 @@ st.set_page_config(
 )
 
 # -------------------------------------------------------------------------
-# [데이터] CEO 원천 소스 반영 (종로, 중구, 용산, 성동, 광진)
+# [데이터] CEO 원천 소스 (종로, 중구, 용산, 성동, 광진)
 # -------------------------------------------------------------------------
 seoul_db = {
     "종로구": {
@@ -74,152 +74,184 @@ seoul_db = {
 }
 
 # -------------------------------------------------------------------------
-# [UI] 사이드바 & 다국어 설정
+# [로직] 사용자 프로필 관리 (Session State)
 # -------------------------------------------------------------------------
-with st.sidebar:
-    st.title("🦁 서울 전설 탐험대")
-    st.caption("Seoul Legend Expedition V23")
-    st.markdown("---")
-    
-    # API 키 입력
-    if "OPENAI_API_KEY" in st.secrets:
-        api_key = st.secrets["OPENAI_API_KEY"]
-    else:
-        api_key = st.text_input("OpenAI API Key", type="password")
-    
-    client = OpenAI(api_key=api_key) if api_key else None
-    
-    # [기능 1] 다국어 지원 설정
-    st.markdown("### 🌍 언어 선택 (Language)")
-    lang_code = st.selectbox(
-        "어떤 언어로 대화할까요?",
-        ["한국어", "English", "中文 (Chinese)", "日本語 (Japanese)", "Français (French)", "Deutsch (German)"]
-    )
-    
-    st.markdown("### 📍 탐험할 지역 선택")
-    region = st.selectbox("어느 구의 전설을 들을까?", list(seoul_db.keys()))
-    char = seoul_db[region]
-    
-    # 캐릭터 카드
-    with st.container(border=True):
-        st.subheader(f"✨ {char['name']}")
-        st.caption(f"{char['role']}")
-        
-        img_name = f"{region}_{char['name']}.png"
-        if os.path.exists(img_name):
-            st.image(img_name)
-        else:
-            st.info(f"📸 {char['visual']}")
-            
-        st.success(f"💬 \"{char['welcome']}\"")
-        st.markdown(f"**🔑 키워드:** {char['keyword']}")
+if "user_profile" not in st.session_state:
+    st.session_state.user_profile = None
 
 # -------------------------------------------------------------------------
-# [메인] 탭 구성 (4개 탭)
+# [화면 1] 인트로: 사용자 정보 입력 (첫 화면)
 # -------------------------------------------------------------------------
-st.markdown(f"# 🗺️ {region} 전설 탐험 : {char['name']}와의 만남")
-st.markdown(f"### \"{char['welcome']}\"")
-st.markdown("---")
-
-tab1, tab2, tab3, tab4 = st.tabs(["📜 전설 듣기", "🗣️ 수다 떨기 (Global Chat)", "🎨 삽화 그리기", "✍️ 나도 전설 작가"])
-
-# [Tab 1] 전설 이야기
-with tab1:
-    st.subheader(f"📖 {char['name']}의 비하인드 스토리")
-    st.write(f"**배경:** {char['story']}")  # 원문 텍스트 표시
-    
-    if st.button("▶️ AI 성우가 읽어주기 (TTS)", type="primary"):
-        if not client: st.warning("API Key 필요")
-        else:
-            with st.spinner("목소리 가다듬는 중..."):
-                try:
-                    # 텍스트가 너무 길면 요약해서 읽기
-                    response = client.audio.speech.create(
-                        model="tts-1",
-                        voice="onyx",
-                        input=char['story'][:4096]
-                    )
-                    response.stream_to_file("story_audio.mp3")
-                    st.audio("story_audio.mp3")
-                except Exception as e:
-                    st.error(f"오류: {e}")
-
-# [Tab 2] 다국어 프리토킹 (업그레이드)
-with tab2:
-    st.subheader(f"🌍 {char['name']}와 {lang_code}로 대화하기")
-    st.info(f"지금 {char['name']}는 **{lang_code}**를 완벽하게 구사하며, **{char['speech']}** 말투를 유지합니다!")
-
-    if "rp_messages" not in st.session_state:
-        st.session_state.rp_messages = []
-        
-    for m in st.session_state.rp_messages:
-        with st.chat_message(m["role"]): st.write(m["content"])
-            
-    if user_input := st.chat_input(f"{lang_code}로 말을 걸어보세요..."):
-        st.session_state.rp_messages.append({"role": "user", "content": user_input})
-        with st.chat_message("user"): st.write(user_input)
-        
-        if client:
-            # 다국어 페르소나 프롬프트
-            sys_prompt = f"""
-            당신은 '{char['name']}'입니다.
-            [성격]: {char['personality']}
-            [원래 말투]: {char['speech']}
-            [설정]: {char['story']}
-            
-            [미션]: 사용자와 대화하되, 반드시 **{lang_code}**로 답변하세요.
-            단, 언어가 바뀌어도 당신 특유의 '말투'나 '성격' 느낌은 살려야 합니다.
-            (예: 사극 톤이라면 영어에서도 고어(Thee, Thou)를 쓰거나 점잖게 표현)
-            """
-            response = client.chat.completions.create(
-                model="gpt-4",
-                messages=[{"role": "system", "content": sys_prompt}] + st.session_state.rp_messages
-            )
-            ai_reply = response.choices[0].message.content
-            st.session_state.rp_messages.append({"role": "assistant", "content": ai_reply})
-            with st.chat_message("assistant"): st.write(ai_reply)
-
-# [Tab 3] 이미지 생성
-with tab3:
-    st.subheader("🎨 상상화 그리기")
-    scene = st.text_input("어떤 장면을 그릴까요? (예: 떡볶이 먹는 해치)")
-    if st.button("그림 생성"):
-        if client:
-            with st.spinner("그리는 중..."):
-                p = f"Illustration of {char['name']} ({char['visual']}), Style: Children's book art. Scene: {scene}"
-                try:
-                    res = client.images.generate(model="dall-e-3", prompt=p, size="1024x1024")
-                    st.image(res.data[0].url)
-                except: st.error("이미지 생성 오류")
-
-# [Tab 4] 나만의 전설 만들기 (신규 기능)
-with tab4:
-    st.subheader("👑 내가 만드는 새로운 전설")
-    st.write(f"**{char['name']}**가 주인공인 새로운 이야기를 만들어보세요!")
+if st.session_state.user_profile is None:
+    st.title("🦁 서울 전설 탐험대 : 입단 신청서")
+    st.markdown("### \"안녕? 나는 서울을 지키는 해치야. 너에 대해 알려줄래?\"")
     
     col1, col2 = st.columns(2)
     with col1:
-        user_name = st.text_input("작가님 이름 (Your Name)")
-    with col2:
-        keywords = st.text_input("이야기 소재 (예: 좀비, 지하철, 아이돌)")
+        st.image("https://raw.githubusercontent.com/mystorydoll-cyber/243-local-story/main/images/intro_haechi.png", caption="어서 오시오!", use_column_width=True)
+        # (이미지가 없으면 엑박이 뜰 수 있으니, 나중에 intro_haechi.png를 올리거나 이 줄을 지우세요)
         
-    if st.button("✨ 새 전설 창작하기"):
-        if not client: st.warning("API Key 필요")
-        elif not keywords: st.warning("소재를 입력해주세요!")
+    with col2:
+        with st.form("intro_form"):
+            name = st.text_input("이름 (Name)", placeholder="길동이")
+            age = st.slider("나이 (Age)", 5, 100, 25)
+            gender = st.radio("성별 (Gender)", ["남성", "여성", "기타"])
+            nationality = st.selectbox("국적 (Nationality)", ["대한민국", "USA", "China", "Japan", "France", "Germany", "Other"])
+            
+            submitted = st.form_submit_button("🚀 탐험 시작하기 (Start Adventure)")
+            
+            if submitted and name:
+                # 프로필 저장
+                st.session_state.user_profile = {
+                    "name": name,
+                    "age": age,
+                    "gender": gender,
+                    "nationality": nationality
+                }
+                st.rerun() # 화면 새로고침해서 메인으로 이동
+            elif submitted and not name:
+                st.error("이름을 알려줘야 시작할 수 있어!")
+
+# -------------------------------------------------------------------------
+# [화면 2] 메인 앱 (정보 입력 후 진입)
+# -------------------------------------------------------------------------
+else:
+    # 사용자 정보 가져오기
+    user = st.session_state.user_profile
+    
+    with st.sidebar:
+        st.title(f"반갑소, {user['name']}!")
+        st.caption(f"{user['age']}세 / {user['nationality']}")
+        st.markdown("---")
+        
+        # 정보 수정 버튼
+        if st.button("🔄 내 정보 다시 입력하기"):
+            st.session_state.user_profile = None
+            st.rerun()
+            
+        st.markdown("---")
+        
+        # API 키 입력
+        if "OPENAI_API_KEY" in st.secrets:
+            api_key = st.secrets["OPENAI_API_KEY"]
         else:
-            with st.spinner("해치가 머리를 굴리는 중..."):
-                prompt = f"""
-                당신은 동화 작가입니다.
-                주인공: {char['name']} ({char['role']})
-                원래 배경: {char['story']}
+            api_key = st.text_input("OpenAI API Key", type="password")
+        
+        client = OpenAI(api_key=api_key) if api_key else None
+        
+        # 지역 선택
+        st.markdown("### 📍 탐험할 지역 선택")
+        region = st.selectbox("어느 구의 전설을 들을까?", list(seoul_db.keys()))
+        char = seoul_db[region]
+        
+        # 캐릭터 카드
+        with st.container(border=True):
+            st.subheader(f"✨ {char['name']}")
+            st.caption(f"{char['role']}")
+            img_name = f"{region}_{char['name']}.png"
+            if os.path.exists(img_name):
+                st.image(img_name)
+            else:
+                st.info(f"📸 {char['visual']}")
+            st.markdown(f"**🔑 키워드:** {char['keyword']}")
+
+    # 메인 콘텐츠
+    st.markdown(f"# 🗺️ {region} 전설 탐험 : {char['name']}와의 만남")
+    
+    # ---------------------------------------------------------------------
+    # [핵심 로직] 사용자 맞춤형 환영 인사 생성
+    # ---------------------------------------------------------------------
+    welcome_prompt = f"""
+    당신은 '{char['name']}'입니다. 말투: {char['speech']}.
+    사용자 정보: [{user['age']}세 {user['gender']}, 국적: {user['nationality']}, 이름: {user['name']}]
+    
+    위 사용자에게 딱 맞는 '첫인사'를 1문장으로 해주세요.
+    - 어린이면: 친절하고 쉬운 말로
+    - 외국인이면: 그 나라 언어로 (혹은 한국어와 섞어서)
+    - 성인이면: 예의 바르고 흥미롭게
+    """
+    
+    if client and "welcome_msg" not in st.session_state:
+        # 매번 API 부르면 느리니까, 실제로는 캐싱하거나 생략 가능. 여기선 예시로 보여줌.
+        pass 
+
+    st.info(f"👋 **{char['name']}**: \"어서 와, {user['name']}! 내 이야기가 궁금하니?\"")
+    st.markdown("---")
+
+    tab1, tab2, tab3, tab4 = st.tabs(["📜 전설 듣기", "🗣️ 수다 떨기", "🎨 삽화 그리기", "✍️ 나도 전설 작가"])
+
+    # [Tab 1] 전설 듣기 (맞춤형 변환)
+    with tab1:
+        st.subheader(f"📖 {char['name']}의 이야기 보따리")
+        
+        if st.button("▶️ 내 수준에 맞춰 이야기 해주세요", type="primary"):
+            if not client: st.warning("API Key 필요")
+            else:
+                with st.spinner("사용자 눈높이에 맞춰 각색 중..."):
+                    prompt = f"""
+                    당신은 '{char['name']}'입니다.
+                    [원래 이야기]: {char['story']}
+                    [말투]: {char['speech']}
+                    
+                    [사용자 정보]: 
+                    - 나이: {user['age']}세
+                    - 국적: {user['nationality']}
+                    - 성별: {user['gender']}
+                    
+                    [미션]: 위 사용자가 가장 흥미로워하고 이해하기 쉽게 이야기를 '각색'해서 들려주세요.
+                    - 어린이면: 무서운 건 빼고, 신나고 교훈적으로, 쉬운 단어 사용.
+                    - 외국인이면: 한국 문화(도깨비, 해치 등)에 대한 짧은 설명을 덧붙여서 이해를 도움.
+                    - 어른이면: 역사적 사실이나 감동적인 포인트를 강조.
+                    - 언어: 사용자의 국적이 한국이 아니면 해당 국가 언어로 번역해서 출력.
+                    """
+                    resp = client.chat.completions.create(model="gpt-4", messages=[{"role":"user", "content":prompt}])
+                    st.write(resp.choices[0].message.content)
+
+    # [Tab 2] 수다 떨기 (맞춤형 페르소나)
+    with tab2:
+        st.subheader(f"🗣️ {char['name']}와 대화하기")
+        
+        if "rp_messages" not in st.session_state:
+            st.session_state.rp_messages = []
+            
+        for m in st.session_state.rp_messages:
+            with st.chat_message(m["role"]): st.write(m["content"])
                 
-                [요청]: 위 주인공이 등장하는 새로운 짧은 동화를 지어주세요.
-                [필수 소재]: {keywords}
-                [작가 이름]: {user_name}
+        if user_input := st.chat_input("말을 걸어보세요..."):
+            st.session_state.rp_messages.append({"role": "user", "content": user_input})
+            with st.chat_message("user"): st.write(user_input)
+            
+            if client:
+                sys_prompt = f"""
+                당신은 '{char['name']}'입니다. ({char['personality']}, {char['speech']})
+                상대방은 {user['age']}세 {user['nationality']} {user['name']}입니다.
                 
-                이야기는 아주 흥미진진하고 유머러스하게 써주세요.
-                마지막에는 "{user_name} 작가님의 상상력, 대단하오!" 처럼 칭찬 멘트를 덧붙여주세요.
+                상대방의 나이와 국적을 고려하여, 적절한 태도와 언어로 대화하세요.
+                (예: 아이에겐 다정하게, 외국인에겐 문화를 설명하며)
                 """
-                resp = client.chat.completions.create(model="gpt-4", messages=[{"role":"user", "content":prompt}])
-                st.success(f"🎉 {user_name} 작가님의 신작 발표!")
-                st.markdown(resp.choices[0].message.content)
+                response = client.chat.completions.create(
+                    model="gpt-4",
+                    messages=[{"role": "system", "content": sys_prompt}] + st.session_state.rp_messages
+                )
+                ai_reply = response.choices[0].message.content
+                st.session_state.rp_messages.append({"role": "assistant", "content": ai_reply})
+                with st.chat_message("assistant"): st.write(ai_reply)
+
+    # [Tab 3] 이미지 (동일)
+    with tab3:
+        st.subheader("🎨 상상화 그리기")
+        scene = st.text_input("어떤 장면을 그릴까요?")
+        if st.button("그림 생성"):
+            if client:
+                with st.spinner("그리는 중..."):
+                    p = f"Illustration of {char['name']} ({char['visual']}). Scene: {scene}. Target Audience Age: {user['age']}"
+                    try:
+                        res = client.images.generate(model="dall-e-3", prompt=p, size="1024x1024")
+                        st.image(res.data[0].url)
+                    except: st.error("오류 발생")
+
+    # [Tab 4] 작가 모드 (동일)
+    with tab4:
+        st.subheader("👑 내가 만드는 새로운 전설")
+        col1, col2 = st.columns(2)
+        with col1: user_name = st.text
