@@ -4,7 +4,7 @@ import random
 from openai import OpenAI
 
 # -------------------------------------------------------------------------
-# [설정] V28: 서울 해치 탐험 (Root Image Fix)
+# [설정] V30: 서울 해치 탐험 (Path Fixed)
 # -------------------------------------------------------------------------
 st.set_page_config(
     layout="wide",
@@ -89,20 +89,24 @@ if st.session_state.user_profile is None:
     
     col1, col2 = st.columns(2)
     with col1:
-        # [수정] intro 폴더가 아니라 '현재 폴더(.)'에서 png 찾기
+        # [수정] CEO님이 만드신 'intro' 폴더(루트 경로)를 바라보게 수정!
+        intro_dir = "intro" 
         try:
-            current_dir = "."
-            # 현재 폴더에 있는 png 파일들만 싹 긁어모으기
-            intro_images = [f for f in os.listdir(current_dir) if f.lower().endswith('.png')]
-            
-            if intro_images:
-                selected_img = random.choice(intro_images) # 랜덤 뽑기
-                st.image(selected_img, caption="어서 오시오! 우리는 서울의 수호신 해치라네.", use_column_width=True)
-            else:
-                st.info("해치들이 단장 중이오. (이미지 없음)")
+            if os.path.exists(intro_dir):
+                # 폴더 내의 이미지 파일 찾기
+                intro_images = [f for f in os.listdir(intro_dir) if f.lower().endswith(('.png', '.jpg', '.jpeg'))]
                 
+                if intro_images:
+                    selected_img = random.choice(intro_images)
+                    img_path = os.path.join(intro_dir, selected_img)
+                    st.image(img_path, caption="어서 오시오! 다양한 해치가 당신을 기다린다네.", use_column_width=True)
+                else:
+                    st.info("해치들이 아직 도착하지 않았소. (intro 폴더가 비어있음)")
+            else:
+                 st.info("아직 'intro' 폴더가 없군요. (경로 확인 필요)")
+                 
         except Exception as e:
-             st.error(f"알림: 이미지 로딩 중 문제 발생 ({e})")
+             st.error(f"이미지 로딩 오류: {e}")
 
     with col2:
         with st.form("intro_form"):
@@ -166,7 +170,7 @@ else:
             st.subheader(f"✨ {char['name']}")
             st.caption(f"{char['role']}")
             
-            # [이미지] 현재 폴더에 있는 파일 찾기
+            # [기존] 사이드바 이미지는 루트(Root)에서 찾음
             img_name = f"{region}_{char['name']}.png"
             if os.path.exists(img_name):
                 st.image(img_name)
