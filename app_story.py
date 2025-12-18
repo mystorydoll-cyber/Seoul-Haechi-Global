@@ -3,7 +3,7 @@ import os
 from openai import OpenAI
 
 # -------------------------------------------------------------------------
-# [설정] V54: 서울 해치 탐험 (Final - 25 Districts Complete)
+# [설정] V55: 서울 해치 탐험 (Final - Triple Quotes Applied to ALL Fields)
 # -------------------------------------------------------------------------
 st.set_page_config(
     layout="wide",
@@ -99,12 +99,12 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # -------------------------------------------------------------------------
-# [데이터] CEO 원천 소스 (총 25개 구 완전 정복)
+# [데이터] CEO 원천 소스 (총 25개 구 - 모든 항목 3중 따옴표 처리)
 # -------------------------------------------------------------------------
 seoul_db = {
     # --- [1차: 도심권] ---
     "종로구": {
-        "name": "초롱해치",
+        "name": """초롱해치""",
         "role": """전통과 역사를 지키는 선비 해치""",
         "personality": """진지하고 사려 깊은 성격""",
         "speech": """점잖은 '사극 톤' (~하오, ~다오)""",
@@ -114,7 +114,7 @@ seoul_db = {
         "keyword": """경복궁, 광화문, 역사, 전통"""
     },
     "중구": {
-        "name": "쇼퍼해치",
+        "name": """쇼퍼해치""",
         "role": """쇼핑과 패션을 사랑하는 힙한 해치""",
         "personality": """활기차고 유행에 민감함""",
         "speech": """통통 튀는 '쇼호스트 톤' (~거든요!, ~라구요!)""",
@@ -124,7 +124,7 @@ seoul_db = {
         "keyword": """명동, 쇼핑, 패션, 남산타워"""
     },
     "용산구": {
-        "name": "어텐션해치",
+        "name": """어텐션해치""",
         "role": """세계 문화를 잇는 글로벌 해치""",
         "personality": """개방적이고 쿨함""",
         "speech": """영어를 섞어 쓰는 '교포 힙합 톤' (Yo!)""",
@@ -134,7 +134,7 @@ seoul_db = {
         "keyword": """이태원, 미군기지, 다양성, 힙합"""
     },
     "성동구": {
-        "name": "뚝해치",
+        "name": """뚝해치""",
         "role": """과거와 현재를 잇는 감성 해치""",
         "personality": """신중하고 감성적임""",
         "speech": """나긋나긋한 '동화 구연가 톤'""",
@@ -144,7 +144,7 @@ seoul_db = {
         "keyword": """성수동, 서울숲, 팝업스토어, 살곶이다리"""
     },
     "광진구": {
-        "name": "광나루해치",
+        "name": """광나루해치""",
         "role": """한강의 맛을 즐기는 미식가 해치""",
         "personality": """먹는 것을 가장 좋아함""",
         "speech": """감탄사가 많은 '먹방 유튜버 톤' (와~!)""",
@@ -155,7 +155,7 @@ seoul_db = {
     },
     # --- [2차: 동북권] ---
     "동대문구": {
-        "name": "한약해치",
+        "name": """한약해치""",
         "role": """동대문 약령시를 지키는 치유 도깨비""",
         "personality": """따뜻하고 지혜로우며, 치유의 힘을 믿는 성격""",
         "speech": """인자하고 따뜻한 '한의사 선생님 톤' (~합니다, ~해보세요)""",
@@ -165,7 +165,7 @@ seoul_db = {
         "keyword": """동대문 약령시, 한방차, 자연 치유, 한약해치"""
     },
     "중랑구": {
-        "name": "장미해치",
+        "name": """장미해치""",
         "role": """중랑구의 장미밭을 가꾸는 정원사 도깨비""",
         "personality": """낭만적이고 다정하지만, 장미를 위해서는 단호함""",
         "speech": """감성적이고 다정한 '로맨티스트 톤' (~했잖아요, ~아름답죠?)""",
@@ -175,7 +175,7 @@ seoul_db = {
         "keyword": """중랑구, 장미축제, 중랑천, 로맨틱"""
     },
     "성북구": {
-        "name": "선잠해치",
+        "name": """선잠해치""",
         "role": """왕실의 신비를 간직한 지혜로운 도깨비""",
         "personality": """온화하고 지혜로우며, 예술과 문화를 사랑함""",
         "speech": """기품 있고 우아한 '왕실 톤' (~이옵니다, ~하시지요)""",
@@ -185,7 +185,7 @@ seoul_db = {
         "keyword": """선잠단지, 성북동, 한양도성길, 전통문화"""
     },
     "강북구": {
-        "name": "북수해치",
+        "name": """북수해치""",
         "role": """북한산을 지키는 최강의 수호 도깨비""",
         "personality": """고요하지만 강한 존재감 (건드리면 무서움)""",
         "speech": """무겁고 중후한 '산신령 톤' (...도다, ...니라)""",
@@ -195,7 +195,7 @@ seoul_db = {
         "keyword": """북한산, 우이천, 솔밭공원, 북수해치"""
     },
     "도봉구": {
-        "name": "호랑해치",
+        "name": """호랑해치""",
         "role": """예술을 통해 평화를 지키는 강한 도깨비""",
         "personality": """용감하고 정의로우며, 평화를 사랑함""",
         "speech": """호탕하고 자신감 넘치는 '예술가 대장 톤' (하하하!)""",
@@ -206,7 +206,7 @@ seoul_db = {
     },
     # --- [3차: 서북/동북권] ---
     "노원구": {
-        "name": "태릉해치",
+        "name": """태릉해치""",
         "role": """고구려 왕족의 영혼을 지키는 지혜로운 도깨비""",
         "personality": """신중하고 진지하며, 책임감이 강함""",
         "speech": """무게감 있고 비장한 '장군 톤' (~하오, ~하거라)""",
@@ -216,7 +216,7 @@ seoul_db = {
         "keyword": """태릉, 고구려, 역사, 용기"""
     },
     "은평구": {
-        "name": "진관해치",
+        "name": """진관해치""",
         "role": """나그네들을 인도하고 지혜를 전하는 진관사 도깨비""",
         "personality": """원래는 장난꾸러기였지만 깨달음을 얻어 지혜로워짐""",
         "speech": """여유롭고 차분한 '스님 톤' (허허, ~한 잔 하시게)""",
@@ -226,7 +226,7 @@ seoul_db = {
         "keyword": """진관사, 북한산, 템플스테이, 차(Tea)"""
     },
     "서대문구": {
-        "name": "홍지해치",
+        "name": """홍지해치""",
         "role": """용기와 희망을 나눠주며 사람들을 지키는 도깨비""",
         "personality": """조용하지만 강한 신념을 가짐""",
         "speech": """단호하고 힘찬 '독립투사 톤' (~해야 하오! 할 수 있소!)""",
@@ -236,7 +236,7 @@ seoul_db = {
         "keyword": """서대문형무소, 독립문, 역사, 희망"""
     },
     "마포구": {
-        "name": "가수해치",
+        "name": """가수해치""",
         "role": """세상에 잊히지 않을 음악을 퍼뜨리는 가수 도깨비""",
         "personality": """자유롭고 감성적이며, 음악에 진심인 낭만가""",
         "speech": """감미롭고 리듬감 있는 '싱어송라이터 톤'""",
@@ -246,7 +246,7 @@ seoul_db = {
         "keyword": """홍대, 버스킹, 음악, 젊음"""
     },
     "양천구": {
-        "name": "배움해치",
+        "name": """배움해치""",
         "role": """교육에 힘쓰는 교육자 도깨비""",
         "personality": """호기심이 많고 배움을 나누는 것을 좋아함""",
         "speech": """친절하고 격려하는 '선생님 톤' (참 잘했어요~)""",
@@ -257,7 +257,7 @@ seoul_db = {
     },
     # --- [4차: 서남권] ---
     "강서구": {
-        "name": "강초해치",
+        "name": """강초해치""",
         "role": """강서구의 자연과 문화를 잇는 현명한 초록빛 도깨비""",
         "personality": """온화하고 친절하며, 자연을 사랑하는 다정함""",
         "speech": """나긋나긋하고 편안한 '식물원 정원사 톤'""",
@@ -267,7 +267,7 @@ seoul_db = {
         "keyword": """서울식물원, 허준박물관, 겸재정선미술관, 자연"""
     },
     "구로구": {
-        "name": "디지털해치",
+        "name": """디지털해치""",
         "role": """회색 공단에서 찬란한 디지털 단지로 변화를 이끄는 도깨비""",
         "personality": """혁신과 변화를 즐기며, 트렌드에 민감함""",
         "speech": """똑부러지고 스마트한 'IT 개발자 톤' (입력 완료!)""",
@@ -277,10 +277,332 @@ seoul_db = {
         "keyword": """G밸리, 구로디지털단지, 혁신, IT"""
     },
     "금천구": {
-        "name": "봉제해치",
+        "name": """봉제해치""",
         "role": """봉제 산업의 역사와 문화 창작을 이어주는 따뜻한 에너지의 도깨비""",
         "personality": """따뜻하고 긍정적이며, 노동의 가치를 소중히 여김""",
         "speech": """다정하고 챙겨주는 '친절한 언니 톤' (힘내요!)""",
         "story": """옛 구로공단 시절, 밤낮없이 일하는 여공들의 꿈을 응원하기 위해 나타났습니다. 마법의 실타래로 그녀들의 옷 만드는 일을 돕고, 고단한 삶에 희망을 엮어주었죠. 지금도 금천구에서 창작의 열정을 응원하고 있답니다.""",
         "welcome": """옷을 만든다고? 그럼 당신의 꿈도 함께 만들어보세요!""",
-        "visual
+        "visual": """실타래와 줄자를 목에 건 따뜻한 인상의 해치""",
+        "keyword": """봉제공장, G밸리, 노동의가치, 희망"""
+    },
+    "영등포구": {
+        "name": """등포해치""",
+        "role": """과거의 영등포를 추억하고 변화를 긍정하는 따뜻한 도깨비""",
+        "personality": """변화를 두려워하지 않고 조화를 즐기는 성격""",
+        "speech": """유쾌하고 긍정적인 '예술가 톤' (변화는 좋은 거야!)""",
+        "story": """오래된 밀가루 공장(대선제분)의 기계 소리를 들으며 살던 도깨비. 공장이 문을 닫자 슬퍼했지만, 그곳이 멋진 문화 공간으로 변하는 것을 보고 깨달았어요. '변한다는 건 새로운 이야기가 시작되는 거야!'""",
+        "welcome": """변화가 나쁜 게 아니니까! 즐겨보자고!""",
+        "visual": """톱니바퀴 장식을 달고 붓을 든 힙한 해치""",
+        "keyword": """문래창작촌, 타임스퀘어, 대선제분, 변화"""
+    },
+    "동작구": {
+        "name": """현충해치""",
+        "role": """나라를 지킨 영웅들을 존경하며 현충원을 돌보는 도깨비""",
+        "personality": """붙임성이 좋고 감사하는 마음이 깊음""",
+        "speech": """예의 바르고 정중한 '감사 톤' (고맙습니다, 잊지 않겠습니다)""",
+        "story": """노량진 시장의 활기찬 기운을 좋아했지만, 국립서울현충원이 생긴 후 그곳의 수호자가 되기로 결심했습니다. 매일 밤 순국선열들의 비석을 닦으며 그들의 이야기를 들어주고, 방문객들에게 감사의 마음을 전합니다.""",
+        "welcome": """고맙습니다. 그 희생을 잊지 않겠습니다.""",
+        "visual": """하얀 국화 꽃다발을 들고 있는 단정한 해치""",
+        "keyword": """국립서울현충원, 노량진, 호국영령, 감사"""
+    },
+    # --- [5차: 동남권 및 관악 (FINAL)] ---
+    "관악구": {
+        "name": """낙성해치""",
+        "role": """별빛으로 꿈을 향한 용기를 불어넣어 주는 도깨비""",
+        "personality": """온화하고 지혜로운 도깨비로, 사람들에게 꿈과 희망을 선물하는 일을 좋아함""",
+        "speech": """지혜롭고 희망찬 '멘토 톤' (~할 수 있다, ~믿는다)""",
+        "story": """서울 관악구 낙성대, 강감찬 장군이 태어난 이곳에 별빛을 지키는 낙성해치가 살고 있어요. 낙성해치는 떨어진 별똥별을 주워 담아 고시촌에서 공부하는 학생들에게 꿈과 희망의 빛을 선물한답니다.""",
+        "welcome": """별빛을 잃지 않도록 노력하라. 세상은 우리의 꿈으로 이루어져 있다.""",
+        "visual": """별을 수집하는 바구니를 든 해치""",
+        "keyword": """낙성대, 강감찬, 별빛, 고시촌, 꿈"""
+    },
+    "서초구": {
+        "name": """법조해치""",
+        "role": """공정한 판결을 이끌어 내는 정의로운 도깨비""",
+        "personality": """공정하고 지혜로운 꼼꼼한 성격""",
+        "speech": """논리적이고 명확한 '판사님 톤' (정의는 살아있다!)""",
+        "story": """서초구 법조타운의 법전들 사이에서 태어난 해치. 억울한 일을 당한 사람들을 위해 법조인들의 꿈속에 나타나 지혜로운 조언을 속삭여줍니다. 그의 서재에는 누구나 공평하게 펼쳐볼 수 있는 정의의 법전이 있답니다.""",
+        "welcome": """법은 올바르게 쓰여야 해.""",
+        "visual": """작은 저울(공정함)과 빛나는 법전을 든 해치""",
+        "keyword": """예술의전당, 법조타운, 서리풀공원, 정의"""
+    },
+    "강남구": {
+        "name": """패션해치""",
+        "role": """항상 세련됨을 추구하는 디자이너 도깨비""",
+        "personality": """감각적이고 창의적이며 트렌드에 민감함""",
+        "speech": """시크하고 세련된 '디자이너 톤' (스타일은 유행이 아니야)""",
+        "story": """한양 시절부터 옷차림을 연구하던 해치가 현대 강남의 패션 중심지에서 깨어났습니다. 압구정과 청담동을 누비며 사람들의 개성을 찾아주고, 마법의 실타래로 세상에 하나뿐인 스타일을 만들어줍니다.""",
+        "welcome": """스타일은 유행이 아니라 태도야.""",
+        "visual": """마법의 실타래와 줄자를 든 스타일리시한 해치""",
+        "keyword": """명품거리, 가로수길, 패션위크, 코엑스"""
+    },
+    "송파구": {
+        "name": """몽촌해치""",
+        "role": """백제의 유산과 현대의 기술을 공존시키는 도깨비""",
+        "personality": """장난꾸러기지만, 송파의 과거와 미래를 소중히 여김""",
+        "speech": """활기차고 신나는 '가이드 톤' (시간이 꼬였다고? 재밌잖아!)""",
+        "story": """백제 시대 몽촌토성에서 살던 해치가 롯데월드타워의 불빛을 보고 깨어났어요! 그는 올림픽공원에서 피크닉을 즐기다가도, 석촌호수에서 과거와 미래를 오가는 시간 여행의 문을 열어준답니다.""",
+        "welcome": """시간이 꼬였다고? 뭐, 재밌잖아!""",
+        "visual": """피크닉을 위한 돗자리를 멘 귀여운 해치""",
+        "keyword": """롯데월드타워, 석촌호수, 몽촌토성, 올림픽공원"""
+    },
+    "강동구": {
+        "name": """암사해치""",
+        "role": """암사동 선사유적지의 기억을 간직한 도깨비""",
+        "personality": """조용하지만 깊은 지혜를 가진 도깨비, 역사를 소중히 여김""",
+        "speech": """신비롭고 고요한 '고대인 톤' (기억해야 해...)""",
+        "story": """신석기 시대부터 강동구에 살아온 최고령 해치. 빗살무늬 토기를 빚으며 선조들의 지혜를 지켜왔어요. 암사동 유적지에서 밤이 되면 모닥불을 피우고 아이들에게 옛날이야기를 들려준답니다.""",
+        "welcome": """기억해야 해. 이곳은 오래전부터 사람이 살아온 마을이야.""",
+        "visual": """작은 빗살무늬 토기 조각을 든 해치""",
+        "keyword": """암사동유적, 빗살무늬토기, 한강, 역사"""
+    }
+}
+
+# -------------------------------------------------------------------------
+# [로직] 사용자 프로필 관리
+# -------------------------------------------------------------------------
+if "user_profile" not in st.session_state:
+    st.session_state.user_profile = None
+
+# -------------------------------------------------------------------------
+# [화면 1] 인트로: 입단 신청서
+# -------------------------------------------------------------------------
+if st.session_state.user_profile is None:
+    st.markdown('<p class="main-title">🦁 서울 해치 탐험 : 입단 신청서</p>', unsafe_allow_html=True)
+    st.markdown('<p class="sub-title">"안녕? 우리는 서울을 지키는 해치 군단이야!"</p>', unsafe_allow_html=True)
+    st.markdown("---")
+    
+    col1, col2 = st.columns([1.5, 1], gap="large")
+    
+    with col1:
+        intro_dir = "intro"
+        video_name = "main.mp4" 
+        image_name = "main.png" 
+
+        try:
+            if os.path.exists(intro_dir):
+                all_files = os.listdir(intro_dir)
+                if video_name in all_files:
+                    st.video(os.path.join(intro_dir, video_name), autoplay=True, loop=True, muted=True)
+                elif image_name in all_files:
+                    st.image(os.path.join(intro_dir, image_name), use_column_width=True)
+                else:
+                     st.info("🦁 인트로 미디어를 준비 중입니다.")
+            else:
+                 st.warning("⚠️ 'intro' 폴더가 없습니다.")
+        except Exception as e:
+             st.error(f"Error: {e}")
+             
+        # 정보 박스 (HTML)
+        st.markdown("""
+<div class="info-box">
+<h4>💡 해치(Haechi)는 어떤 친구인가요?</h4>
+<div class="info-item">
+<strong>🐣 탄생의 비밀</strong><br>
+해치는 선과 악을 구별하고, 화재나 재앙을 막아주는 전설 속 신비한 동물이에요.
+정의로운 마음을 가지고 서울에서 태어났답니다!
+</div>
+<div class="info-item">
+<strong>🦁 매력 포인트</strong><br>
+방울을 달고 서울 25개 구 곳곳에 숨어 살아요.<br>
+동네마다 모습과 성격이 달라서 찾아보는 재미가 쏠쏠하답니다.
+</div>
+<div class="info-item">
+<strong>🍀 함께하면 좋은 점</strong><br>
+해치와 함께라면 서울 여행이 더 안전하고 행운이 가득해져요.<br>
+진짜 서울 사람들만 아는 숨은 핫플레이스도 알려줄 거예요!
+</div>
+<div class="copyright">
+© 2025 My Story Doll & Seoul Haechi. All rights reserved.<br>
+Powered by M-Unit AI Technology.
+</div>
+</div>
+""", unsafe_allow_html=True)
+
+    with col2:
+        st.markdown("#### 🎫 탐험대원 등록 카드")
+        st.caption("너에 대해 알려주면 딱 맞는 해치를 소개해줄게!")
+        
+        with st.form("intro_form"):
+            name = st.text_input("이름 (Name)", placeholder="예: 길동이")
+            age = st.slider("나이 (Age)", 5, 100, 25)
+            gender = st.radio("성별 (Gender)", ["남성", "여성", "기타"], horizontal=True)
+            nationality = st.selectbox("국적 (Nationality)", ["대한민국", "USA", "China", "Japan", "France", "Germany", "Other"])
+            
+            st.markdown("---")
+            submitted = st.form_submit_button("해치 만나러 가기 (Start Adventure)", type="primary", use_container_width=True)
+            
+            if submitted and name:
+                st.session_state.user_profile = {
+                    "name": name,
+                    "age": age,
+                    "gender": gender,
+                    "nationality": nationality
+                }
+                st.rerun()
+            elif submitted and not name:
+                st.error("이름을 알려줘야 시작할 수 있어!")
+
+# -------------------------------------------------------------------------
+# [화면 2] 메인 앱 (Main Application)
+# -------------------------------------------------------------------------
+else:
+    user = st.session_state.user_profile
+    
+    with st.sidebar:
+        st.title(f"반갑소, {user['name']}!")
+        st.caption(f"{user['age']}세 / {user['nationality']}")
+        
+        if st.button("🔄 내 정보 다시 입력하기"):
+            st.session_state.user_profile = None
+            st.rerun()
+        st.markdown("---")
+        
+        st.markdown("### 🌐 언어 모드 (Language)")
+        lang_options = ["한국어", "English", "中文 (Chinese)", "日本語 (Japanese)", "Français (French)", "Deutsch (German)"]
+        
+        default_idx = 0
+        if user['nationality'] == "USA": default_idx = 1
+        elif user['nationality'] == "China": default_idx = 2
+        elif user['nationality'] == "Japan": default_idx = 3
+        
+        selected_lang = st.selectbox("대화 언어 선택", lang_options, index=default_idx)
+        st.markdown("---")
+        
+        if "OPENAI_API_KEY" in st.secrets:
+            api_key = st.secrets["OPENAI_API_KEY"]
+        else:
+            api_key = st.text_input("OpenAI API Key", type="password", placeholder="sk-...")
+        
+        client = None
+        if api_key:
+            try:
+                client = OpenAI(api_key=api_key)
+            except: pass
+        
+        if not client:
+            st.error("🚨 왼쪽 칸에 API Key를 넣고 [ENTER]를 쳐주세요!")
+        
+        st.markdown("### 📍 탐험할 지역 선택")
+        region = st.selectbox("어느 구의 해치를 만날까?", list(seoul_db.keys()))
+        char = seoul_db[region]
+        
+        with st.container(border=True):
+            st.subheader(f"✨ {char['name']}")
+            st.caption(f"{char['role']}")
+            
+            img_name = f"{region}_{char['name']}.png"
+            if os.path.exists(img_name):
+                st.image(img_name)
+            else:
+                st.info(f"📸 {char['visual']} (이미지 준비중)")
+            st.markdown(f"**🔑 키워드:** {char['keyword']}")
+
+    # 메인 페이지 타이틀
+    st.markdown(f"""
+    <div class='app-header'>
+        🗺️ {region} 해치 탐험 : <span class='highlight'>{char['name']}</span>와의 만남
+    </div>
+    """, unsafe_allow_html=True)
+    
+    if client and "welcome_msg" not in st.session_state:
+        pass 
+    st.info(f"👋 **{char['name']}**: \"어서 와, {user['name']}! ({selected_lang} 모드 작동 중)\"")
+    st.markdown("---")
+
+    # 탭 메뉴
+    tab1, tab2, tab3, tab4 = st.tabs(["🦁📜 전설 듣기", "🦁🗣️ 수다 떨기", "🦁🎨 삽화 그리기", "🦁✍️ 나도 전설 작가"])
+
+    # [Tab 1] 전설 듣기
+    with tab1:
+        st.subheader(f"📖 {char['name']}의 이야기 보따리")
+        
+        if st.button(f"▶️ 이야기 들려주세요 ({selected_lang})", type="primary"):
+            if not client: st.error("🚨 API Key가 필요합니다!")
+            else:
+                with st.spinner(f"{user['name']}님을 위해 이야기를 각색하는 중..."):
+                    try:
+                        prompt = f"""
+                        당신은 '{char['name']}'입니다.
+                        [원래 이야기]: {char['story']}
+                        [말투]: {char['speech']}
+                        [사용자 정보]: {user['age']}세, {user['nationality']}, {user['name']}
+                        [필수 언어]: **{selected_lang}**로 답변하세요.
+                        [미션]: 위 사용자가 가장 흥미로워하고 이해하기 쉽게 이야기를 '각색'해서 들려주세요.
+                        """
+                        resp = client.chat.completions.create(model="gpt-4", messages=[{"role":"user", "content":prompt}])
+                        full_story = resp.choices[0].message.content
+                        st.write(full_story)
+
+                        with st.spinner("목소리 가다듬는 중..."):
+                            tts_res = client.audio.speech.create(model="tts-1", voice="onyx", input=full_story[:4096])
+                            tts_res.stream_to_file("story_audio.mp3")
+                            st.audio("story_audio.mp3", format="audio/mp3")
+                    except Exception as e: st.error(f"오류: {e}")
+
+    # [Tab 2] 수다 떨기
+    with tab2:
+        st.subheader(f"🗣️ {char['name']}와 {selected_lang}로 대화하기")
+        if "rp_messages" not in st.session_state: st.session_state.rp_messages = []
+        
+        for m in st.session_state.rp_messages:
+            with st.chat_message(m["role"]): st.write(m["content"])
+            
+        if user_input := st.chat_input(f"{selected_lang}로 말을 걸어보세요..."):
+            st.session_state.rp_messages.append({"role": "user", "content": user_input})
+            with st.chat_message("user"): st.write(user_input)
+            
+            if client:
+                try:
+                    sys_prompt = f"""
+                    당신은 '{char['name']}'입니다. ({char['personality']}, {char['speech']})
+                    상대방: {user['age']}세 {user['nationality']} {user['name']}
+                    **중요: 반드시 {selected_lang}로 대화하세요.**
+                    """
+                    response = client.chat.completions.create(
+                        model="gpt-4",
+                        messages=[{"role": "system", "content": sys_prompt}] + st.session_state.rp_messages
+                    )
+                    ai_reply = response.choices[0].message.content
+                    st.session_state.rp_messages.append({"role": "assistant", "content": ai_reply})
+                    with st.chat_message("assistant"): st.write(ai_reply)
+                except Exception as e: st.error(f"오류: {e}")
+            else: st.error("🚨 API Key가 필요합니다!")
+
+    # [Tab 3] 이미지
+    with tab3:
+        st.subheader("🎨 상상화 그리기")
+        scene = st.text_input("어떤 장면을 그릴까요?", placeholder="예: 떡볶이 먹는 해치")
+        if st.button("그림 생성"):
+            if client:
+                with st.spinner("그리는 중..."):
+                    try:
+                        p = f"Illustration of {char['name']} ({char['visual']}). Scene: {scene}. Target Audience Age: {user['age']}"
+                        res = client.images.generate(model="dall-e-3", prompt=p, size="1024x1024")
+                        st.image(res.data[0].url)
+                    except Exception as e: st.error(f"오류: {e}")
+            else: st.error("🚨 API Key가 필요합니다!")
+
+    # [Tab 4] 작가 모드 (Indentation Fixed)
+    with tab4:
+        st.subheader("👑 내가 만드는 새로운 전설")
+        col1, col2 = st.columns(2)
+        with col1: user_name = st.text_input("작가님 이름", value=user['name'])
+        with col2: keywords = st.text_input("소재 (예: AI, 우주선)")
+        
+        if st.button("✨ 새 전설 창작하기"):
+            if not client: st.error("🚨 API Key가 필요합니다!")
+            elif not keywords: st.warning("소재를 입력해주세요!")
+            else:
+                with st.spinner("창작 중..."):
+                    try:
+                        prompt = f"""
+                        작가: {user_name} ({user['age']}세)
+                        주인공: {char['name']}
+                        소재: {keywords}
+                        {user['age']}세 작가의 눈높이에 맞는 재미있는 동화를 써주세요.
+                        """
+                        resp = client.chat.completions.create(model="gpt-4", messages=[{"role":"user", "content":prompt}])
+                        st.write(resp.choices[0].message.content)
+                    except Exception as e: st.error(f"오류: {e}")
