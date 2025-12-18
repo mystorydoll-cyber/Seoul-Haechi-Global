@@ -3,7 +3,7 @@ import os
 from openai import OpenAI
 
 # -------------------------------------------------------------------------
-# [설정] V40: 서울 해치 탐험 (Greeting Highlight)
+# [설정] V39: 서울 해치 탐험 (Title Font Upgrade)
 # -------------------------------------------------------------------------
 st.set_page_config(
     layout="wide",
@@ -13,38 +13,31 @@ st.set_page_config(
 )
 
 # -------------------------------------------------------------------------
-# [스타일] CSS (디자인 고도화 - 인사 강조)
+# [스타일] CSS (디자인 고도화 - 폰트 추가)
 # -------------------------------------------------------------------------
 st.markdown("""
 <style>
+    /* 구글 웹폰트 임포트 (주아체 - 귀엽고 모험적인 느낌) */
     @import url('https://fonts.googleapis.com/css2?family=Jua&display=swap');
 
+    /* 메인 타이틀 스타일 적용 */
     .main-title {
-        font-family: 'Jua', sans-serif;
+        font-family: 'Jua', sans-serif; /* 폰트 적용 */
         text-align: center;
-        font-size: 3.8rem !important;
-        color: #FF4B4B;
+        font-size: 3.8rem !important; /* 크기 조금 더 키움 */
+        color: #FF4B4B; /* 해치 포인트 컬러 */
         margin-bottom: 0.5rem;
-        text-shadow: 3px 3px 6px rgba(0,0,0,0.2);
+        text-shadow: 3px 3px 6px rgba(0,0,0,0.2); /* 입체감 있는 그림자 */
     }
-    /* 서브 타이틀 기본 스타일 */
+    /* 서브 타이틀도 폰트 통일 */
     .sub-title {
         font-family: 'Jua', sans-serif;
         text-align: center;
-        font-size: 2rem !important; /* 기본 크기도 약간 키움 */
+        font-size: 1.8rem !important;
         color: #555;
         margin-bottom: 2rem;
-        line-height: 1.4; /* 줄 간격 조정 */
     }
-    /* [핵심] "안녕?" 강조 스타일 */
-    .greeting-highlight {
-        font-size: 5rem !important; /* 훨씬 더 크게! */
-        color: #00ADD8; /* 다른 색 (청량한 하늘색 포인트) */
-        font-weight: bold;
-        text-shadow: 3px 3px 0px #eee; /* 귀여운 입체 효과 */
-        display: block; /* 줄바꿈 효과 */
-        margin-bottom: 10px;
-    }
+    /* 입력 폼 카드 스타일 */
     div[data-testid="stForm"] {
         background-color: #f9f9f9;
         padding: 30px;
@@ -52,6 +45,7 @@ st.markdown("""
         box-shadow: 0 4px 15px rgba(0,0,0,0.1);
         border: 2px solid #eee;
     }
+    /* 왼쪽 설명 박스 스타일 */
     .info-box {
         background-color: #e8f4f8;
         padding: 20px;
@@ -59,7 +53,9 @@ st.markdown("""
         margin-top: 20px;
         border-left: 5px solid #FF4B4B;
     }
-    .info-box h4 { font-family: 'Jua', sans-serif; }
+    .info-box h4 {
+         font-family: 'Jua', sans-serif;
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -134,14 +130,9 @@ if "user_profile" not in st.session_state:
 # [화면 1] 인트로: 사용자 정보 입력 (Layout Fixed)
 # -------------------------------------------------------------------------
 if st.session_state.user_profile is None:
-    # [디자인 핵심] "안녕?" 부분만 따로 떼어내서 강조 클래스 적용
+    # 타이틀에 CSS 클래스 적용
     st.markdown('<p class="main-title">🦁 서울 해치 탐험 : 입단 신청서</p>', unsafe_allow_html=True)
-    st.markdown('''
-    <p class="sub-title">
-        <span class="greeting-highlight">"안녕?"</span>
-        우리는 서울을 지키는 해치 군단이야!
-    </p>
-    ''', unsafe_allow_html=True)
+    st.markdown('<p class="sub-title">"안녕? 우리는 서울을 지키는 해치 군단이야!"</p>', unsafe_allow_html=True)
     st.markdown("---")
     
     col1, col2 = st.columns([1.5, 1], gap="large")
