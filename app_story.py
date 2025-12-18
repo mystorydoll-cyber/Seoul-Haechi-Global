@@ -3,7 +3,7 @@ import os
 from openai import OpenAI
 
 # -------------------------------------------------------------------------
-# [설정] V38: 서울 해치 탐험 (Layout Balanced)
+# [설정] V39: 서울 해치 탐험 (Title Font Upgrade)
 # -------------------------------------------------------------------------
 st.set_page_config(
     layout="wide",
@@ -13,23 +13,31 @@ st.set_page_config(
 )
 
 # -------------------------------------------------------------------------
-# [스타일] CSS (디자인 고도화)
+# [스타일] CSS (디자인 고도화 - 폰트 추가)
 # -------------------------------------------------------------------------
 st.markdown("""
 <style>
+    /* 구글 웹폰트 임포트 (주아체 - 귀엽고 모험적인 느낌) */
+    @import url('https://fonts.googleapis.com/css2?family=Jua&display=swap');
+
+    /* 메인 타이틀 스타일 적용 */
     .main-title {
+        font-family: 'Jua', sans-serif; /* 폰트 적용 */
         text-align: center;
-        font-size: 3rem !important;
-        font-weight: 700 !important;
-        color: #FF4B4B;
+        font-size: 3.8rem !important; /* 크기 조금 더 키움 */
+        color: #FF4B4B; /* 해치 포인트 컬러 */
         margin-bottom: 0.5rem;
+        text-shadow: 3px 3px 6px rgba(0,0,0,0.2); /* 입체감 있는 그림자 */
     }
+    /* 서브 타이틀도 폰트 통일 */
     .sub-title {
+        font-family: 'Jua', sans-serif;
         text-align: center;
-        font-size: 1.5rem !important;
+        font-size: 1.8rem !important;
         color: #555;
         margin-bottom: 2rem;
     }
+    /* 입력 폼 카드 스타일 */
     div[data-testid="stForm"] {
         background-color: #f9f9f9;
         padding: 30px;
@@ -44,6 +52,9 @@ st.markdown("""
         border-radius: 15px;
         margin-top: 20px;
         border-left: 5px solid #FF4B4B;
+    }
+    .info-box h4 {
+         font-family: 'Jua', sans-serif;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -119,6 +130,7 @@ if "user_profile" not in st.session_state:
 # [화면 1] 인트로: 사용자 정보 입력 (Layout Fixed)
 # -------------------------------------------------------------------------
 if st.session_state.user_profile is None:
+    # 타이틀에 CSS 클래스 적용
     st.markdown('<p class="main-title">🦁 서울 해치 탐험 : 입단 신청서</p>', unsafe_allow_html=True)
     st.markdown('<p class="sub-title">"안녕? 우리는 서울을 지키는 해치 군단이야!"</p>', unsafe_allow_html=True)
     st.markdown("---")
@@ -145,7 +157,7 @@ if st.session_state.user_profile is None:
         except Exception as e:
              st.error(f"Error: {e}")
              
-        # [NEW] 2. 빈 공간 채우기 (스토리텔링 박스)
+        # 2. 빈 공간 채우기 (스토리텔링 박스)
         st.markdown("""
         <div class="info-box">
             <h4>💡 해치란 무엇인가요?</h4>
@@ -171,7 +183,9 @@ if st.session_state.user_profile is None:
             nationality = st.selectbox("국적 (Nationality)", ["대한민국", "USA", "China", "Japan", "France", "Germany", "Other"])
             
             st.markdown("---")
-            submitted = st.form_submit_button("🚀 해치 만나러 가기 (Start)", type="primary", use_container_width=True)
+            # 버튼에도 폰트 적용을 위해 도움말 추가
+            st.caption("🚀 버튼을 눌러 모험을 시작하세요!")
+            submitted = st.form_submit_button("해치 만나러 가기 (Start Adventure)", type="primary", use_container_width=True)
             
             if submitted and name:
                 st.session_state.user_profile = {
