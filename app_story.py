@@ -3,7 +3,7 @@ import os
 from openai import OpenAI
 
 # -------------------------------------------------------------------------
-# [설정] V44: 서울 해치 탐험 (HTML Indentation Fix)
+# [설정] V45: 서울 해치 탐험 (Main Page Design Upgrade)
 # -------------------------------------------------------------------------
 st.set_page_config(
     layout="wide",
@@ -13,12 +13,18 @@ st.set_page_config(
 )
 
 # -------------------------------------------------------------------------
-# [스타일] CSS (디자인 고도화)
+# [스타일] CSS (폰트 및 디자인 전체 적용)
 # -------------------------------------------------------------------------
 st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Jua&display=swap');
 
+    /* [공통] 모든 제목(h1~h3)에 주아체 강제 적용 */
+    h1, h2, h3, .stMarkdown h1, .stMarkdown h2, .stMarkdown h3 {
+        font-family: 'Jua', sans-serif !important;
+    }
+
+    /* 인트로 메인 타이틀 */
     .main-title {
         font-family: 'Jua', sans-serif;
         text-align: center;
@@ -34,6 +40,19 @@ st.markdown("""
         color: #555;
         margin-bottom: 2rem;
     }
+    
+    /* [NEW] 메인 페이지(안쪽) 타이틀 스타일 */
+    .app-header {
+        font-family: 'Jua', sans-serif;
+        font-size: 2.5rem !important;
+        color: #333;
+        text-shadow: 1px 1px 2px rgba(0,0,0,0.1);
+    }
+    .app-header span {
+        color: #FF4B4B; /* 포인트 컬러 */
+    }
+
+    /* 입력 폼 및 박스 스타일 */
     div[data-testid="stForm"] {
         background-color: #f9f9f9;
         padding: 30px;
@@ -41,7 +60,6 @@ st.markdown("""
         box-shadow: 0 4px 15px rgba(0,0,0,0.1);
         border: 2px solid #eee;
     }
-    /* 정보 박스 디자인 */
     .info-box {
         background-color: #e8f4f8;
         padding: 25px;
@@ -52,8 +70,6 @@ st.markdown("""
         color: #333;
     }
     .info-box h4 {
-         font-family: 'Jua', sans-serif !important;
-         color: #333 !important;
          font-size: 1.5rem !important;
          margin-bottom: 15px;
          border-bottom: 2px dashed #b3d7ff;
@@ -150,7 +166,6 @@ if "user_profile" not in st.session_state:
 # [화면 1] 인트로: 입단 신청서
 # -------------------------------------------------------------------------
 if st.session_state.user_profile is None:
-    # 1. 헤더 (타이틀)
     st.markdown('<p class="main-title">🦁 서울 해치 탐험 : 입단 신청서</p>', unsafe_allow_html=True)
     st.markdown('<p class="sub-title">"안녕? 우리는 서울을 지키는 해치 군단이야!"</p>', unsafe_allow_html=True)
     st.markdown("---")
@@ -158,7 +173,6 @@ if st.session_state.user_profile is None:
     col1, col2 = st.columns([1.5, 1], gap="large")
     
     with col1:
-        # 1-1. 미디어 플레이어
         intro_dir = "intro"
         video_name = "main.mp4" 
         image_name = "main.png" 
@@ -177,7 +191,7 @@ if st.session_state.user_profile is None:
         except Exception as e:
              st.error(f"Error: {e}")
              
-        # 1-2. [수정 완료] 정보 박스 (공백 제거하여 코드로 인식되지 않게 함)
+        # 정보 박스 (HTML)
         st.markdown("""
 <div class="info-box">
 <h4>💡 해치(Haechi)는 어떤 친구인가요?</h4>
@@ -204,14 +218,12 @@ Powered by M-Unit AI Technology.
 """, unsafe_allow_html=True)
 
     with col2:
-        # 2. 입력 카드
         st.markdown("#### 🎫 탐험대원 등록 카드")
         st.caption("너에 대해 알려주면 딱 맞는 해치를 소개해줄게!")
         
         with st.form("intro_form"):
             name = st.text_input("이름 (Name)", placeholder="예: 길동이")
             age = st.slider("나이 (Age)", 5, 100, 25)
-            
             gender = st.radio("성별 (Gender)", ["남성", "여성", "기타"], horizontal=True)
             nationality = st.selectbox("국적 (Nationality)", ["대한민국", "USA", "China", "Japan", "France", "Germany", "Other"])
             
@@ -230,7 +242,7 @@ Powered by M-Unit AI Technology.
                 st.error("이름을 알려줘야 시작할 수 있어!")
 
 # -------------------------------------------------------------------------
-# [화면 2] 메인 앱
+# [화면 2] 메인 앱 (Main Application)
 # -------------------------------------------------------------------------
 else:
     user = st.session_state.user_profile
@@ -284,14 +296,20 @@ else:
                 st.info(f"📸 {char['visual']}")
             st.markdown(f"**🔑 키워드:** {char['keyword']}")
 
-    st.markdown(f"# 🗺️ {region} 해치 탐험 : {char['name']}와의 만남")
+    # [수정] 메인 페이지 제목 (폰트 적용 및 HTML 사용)
+    st.markdown(f"""
+    <h1 class='app-header'>
+        🗺️ {region} 해치 탐험 : <span>{char['name']}</span>와의 만남
+    </h1>
+    """, unsafe_allow_html=True)
     
     if client and "welcome_msg" not in st.session_state:
         pass 
     st.info(f"👋 **{char['name']}**: \"어서 와, {user['name']}! ({selected_lang} 모드 작동 중)\"")
     st.markdown("---")
 
-    tab1, tab2, tab3, tab4 = st.tabs(["📜 전설 듣기", "🗣️ 수다 떨기", "🎨 삽화 그리기", "✍️ 나도 전설 작가"])
+    # [수정] 탭 아이콘을 모두 🦁(해치)로 통일
+    tab1, tab2, tab3, tab4 = st.tabs(["🦁 전설 듣기", "🦁 수다 떨기", "🦁 삽화 그리기", "🦁 나도 전설 작가"])
 
     # [Tab 1] 전설 듣기
     with tab1:
