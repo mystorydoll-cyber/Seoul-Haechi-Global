@@ -170,3 +170,229 @@ if st.session_state.user_profile is None:
 
         try:
             if os.path.exists(intro_dir):
+                all_files = os.listdir(intro_dir)
+                if video_name in all_files:
+                    st.video(os.path.join(intro_dir, video_name), autoplay=True, loop=True, muted=True)
+                elif image_name in all_files:
+                    st.image(os.path.join(intro_dir, image_name), use_column_width=True)
+                else:
+                     st.info("🦁 인트로 미디어를 준비 중입니다.")
+            else:
+                 st.warning("⚠️ 'intro' 폴더가 없습니다.")
+        except Exception as e:
+             st.error(f"Error: {e}")
+             
+        # [NEW] 2. 정보 박스 (내용 대폭 강화)
+        st.markdown("""
+        <div class="info-box">
+            <h4>💡 해치(Haechi)는 어떤 친구인가요?</h4>
+            
+            <div class="info-item">
+                <strong>🐣 탄생의 비밀</strong><br>
+                해치는 선과 악을 구별하고, 화재나 재앙을 막아주는 전설 속 신비한 동물이에요.
+                정의로운 마음을 가지고 서울에서 태어났답니다!
+            </div>
+            
+            <div class="info-item">
+                <strong>🦁 매력 포인트</strong><br>
+                방울을 달고 서울 25개 구 곳곳에 숨어 살아요.<br>
+                동네마다 모습과 성격이 달라서 찾아보는 재미가 쏠쏠하답니다.
+            </div>
+            
+            <div class="info-item">
+                <strong>🍀 함께하면 좋은 점</strong><br>
+                해치와 함께라면 서울 여행이 더 안전하고 행운이 가득해져요.<br>
+                진짜 서울 사람들만 아는 숨은 핫플레이스도 알려줄 거예요!
+            </div>
+
+            <div class="copyright">
+            © 2025 My Story Doll & Seoul Haechi. All rights reserved.<br>
+            Powered by M-Unit AI Technology.
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+
+    with col2:
+        # 3. 입력 카드
+        st.markdown("#### 🎫 탐험대원 등록 카드")
+        st.caption("너에 대해 알려주면 딱 맞는 해치를 소개해줄게!")
+        
+        with st.form("intro_form"):
+            name = st.text_input("이름 (Name)", placeholder="예: 길동이")
+            age = st.slider("나이 (Age)", 5, 100, 25)
+            
+            # 가로 배치 라디오 버튼
+            gender = st.radio("성별 (Gender)", ["남성", "여성", "기타"], horizontal=True)
+            nationality = st.selectbox("국적 (Nationality)", ["대한민국", "USA", "China", "Japan", "France", "Germany", "Other"])
+            
+            st.markdown("---")
+            submitted = st.form_submit_button("해치 만나러 가기 (Start Adventure)", type="primary", use_container_width=True)
+            
+            if submitted and name:
+                st.session_state.user_profile = {
+                    "name": name,
+                    "age": age,
+                    "gender": gender,
+                    "nationality": nationality
+                }
+                st.rerun()
+            elif submitted and not name:
+                st.error("이름을 알려줘야 시작할 수 있어!")
+
+# -------------------------------------------------------------------------
+# [화면 2] 메인 앱
+# -------------------------------------------------------------------------
+else:
+    user = st.session_state.user_profile
+    
+    with st.sidebar:
+        st.title(f"반갑소, {user['name']}!")
+        st.caption(f"{user['age']}세 / {user['nationality']}")
+        
+        if st.button("🔄 내 정보 다시 입력하기"):
+            st.session_state.user_profile = None
+            st.rerun()
+        st.markdown("---")
+        
+        st.markdown("### 🌐 언어 모드 (Language)")
+        lang_options = ["한국어", "English", "中文 (Chinese)", "日本語 (Japanese)", "Français (French)", "Deutsch (German)"]
+        
+        default_idx = 0
+        if user['nationality'] == "USA": default_idx = 1
+        elif user['nationality'] == "China": default_idx = 2
+        elif user['nationality'] == "Japan": default_idx = 3
+        
+        selected_lang = st.selectbox("대화 언어 선택", lang_options, index=default_idx)
+        st.markdown("---")
+        
+        if "OPENAI_API_KEY" in st.secrets:
+            api_key = st.secrets["OPENAI_API_KEY"]
+        else:
+            api_key = st.text_input("OpenAI API Key", type="password", placeholder="sk-...")
+        
+        # 클라이언트 연결
+        client = None
+        if api_key:
+            try:
+                client = OpenAI(api_key=api_key)
+            except: pass
+        
+        if not client:
+            st.error("🚨 왼쪽 칸에 API Key를 넣고 [ENTER]를 쳐주세요!")
+        
+        st.markdown("### 📍 탐험할 지역 선택")
+        region = st.selectbox("어느 구의 해치를 만날까?", list(seoul_db.keys()))
+        char = seoul_db[region]
+        
+        with st.container(border=True):
+            st.subheader(f"✨ {char['name']}")
+            st.caption(f"{char['role']}")
+            
+            img_name = f"{region}_{char['name']}.png"
+            if os.path.exists(img_name):
+                st.image(img_name)
+            else:
+                st.info(f"📸 {char['visual']}")
+            st.markdown(f"**🔑 키워드:** {char['keyword']}")
+
+    st.markdown(f"# 🗺️ {region} 해치 탐험 : {char['name']}와의 만남")
+    
+    if client and "welcome_msg" not in st.session_state:
+        pass 
+    st.info(f"👋 **{char['name']}**: \"어서 와, {user['name']}! ({selected_lang} 모드 작동 중)\"")
+    st.markdown("---")
+
+    tab1, tab2, tab3, tab4 = st.tabs(["📜 전설 듣기", "🗣️ 수다 떨기", "🎨 삽화 그리기", "✍️ 나도 전설 작가"])
+
+    # [Tab 1] 전설 듣기
+    with tab1:
+        st.subheader(f"📖 {char['name']}의 이야기 보따리")
+        
+        if st.button(f"▶️ 이야기 들려주세요 ({selected_lang})", type="primary"):
+            if not client: st.error("🚨 API Key가 필요합니다!")
+            else:
+                with st.spinner(f"{user['name']}님을 위해 이야기를 각색하는 중..."):
+                    try:
+                        prompt = f"""
+                        당신은 '{char['name']}'입니다.
+                        [원래 이야기]: {char['story']}
+                        [말투]: {char['speech']}
+                        [사용자 정보]: {user['age']}세, {user['nationality']}, {user['name']}
+                        [필수 언어]: **{selected_lang}**로 답변하세요.
+                        [미션]: 위 사용자가 가장 흥미로워하고 이해하기 쉽게 이야기를 '각색'해서 들려주세요.
+                        """
+                        resp = client.chat.completions.create(model="gpt-4", messages=[{"role":"user", "content":prompt}])
+                        full_story = resp.choices[0].message.content
+                        st.write(full_story)
+
+                        with st.spinner("목소리 가다듬는 중..."):
+                            tts_res = client.audio.speech.create(model="tts-1", voice="onyx", input=full_story[:4096])
+                            tts_res.stream_to_file("story_audio.mp3")
+                            st.audio("story_audio.mp3", format="audio/mp3")
+                    except Exception as e: st.error(f"오류: {e}")
+
+    # [Tab 2] 수다 떨기
+    with tab2:
+        st.subheader(f"🗣️ {char['name']}와 {selected_lang}로 대화하기")
+        if "rp_messages" not in st.session_state: st.session_state.rp_messages = []
+        
+        for m in st.session_state.rp_messages:
+            with st.chat_message(m["role"]): st.write(m["content"])
+            
+        if user_input := st.chat_input(f"{selected_lang}로 말을 걸어보세요..."):
+            st.session_state.rp_messages.append({"role": "user", "content": user_input})
+            with st.chat_message("user"): st.write(user_input)
+            
+            if client:
+                try:
+                    sys_prompt = f"""
+                    당신은 '{char['name']}'입니다. ({char['personality']}, {char['speech']})
+                    상대방: {user['age']}세 {user['nationality']} {user['name']}
+                    **중요: 반드시 {selected_lang}로 대화하세요.**
+                    """
+                    response = client.chat.completions.create(
+                        model="gpt-4",
+                        messages=[{"role": "system", "content": sys_prompt}] + st.session_state.rp_messages
+                    )
+                    ai_reply = response.choices[0].message.content
+                    st.session_state.rp_messages.append({"role": "assistant", "content": ai_reply})
+                    with st.chat_message("assistant"): st.write(ai_reply)
+                except Exception as e: st.error(f"오류: {e}")
+            else: st.error("🚨 API Key가 필요합니다!")
+
+    # [Tab 3] 이미지
+    with tab3:
+        st.subheader("🎨 상상화 그리기")
+        scene = st.text_input("어떤 장면을 그릴까요?", placeholder="예: 떡볶이 먹는 해치")
+        if st.button("그림 생성"):
+            if client:
+                with st.spinner("그리는 중..."):
+                    try:
+                        p = f"Illustration of {char['name']} ({char['visual']}). Scene: {scene}. Target Audience Age: {user['age']}"
+                        res = client.images.generate(model="dall-e-3", prompt=p, size="1024x1024")
+                        st.image(res.data[0].url)
+                    except Exception as e: st.error(f"오류: {e}")
+            else: st.error("🚨 API Key가 필요합니다!")
+
+    # [Tab 4] 작가 모드
+    with tab4:
+        st.subheader("👑 내가 만드는 새로운 전설")
+        col1, col2 = st.columns(2)
+        with col1: user_name = st.text_input("작가님 이름", value=user['name'])
+        with col2: keywords = st.text_input("소재 (예: AI, 우주선)")
+        
+        if st.button("✨ 새 전설 창작하기"):
+            if not client: st.error("🚨 API Key가 필요합니다!")
+            elif not keywords: st.warning("소재를 입력해주세요!")
+            else:
+                with st.spinner("창작 중..."):
+                    try:
+                        prompt = f"""
+                        작가: {user_name} ({user['age']}세)
+                        주인공: {char['name']}
+                        소재: {keywords}
+                        {user['age']}세 작가의 눈높이에 맞는 재미있는 동화를 써주세요.
+                        """
+                        resp = client.chat.completions.create(model="gpt-4", messages=[{"role":"user", "content":prompt}])
+                        st.write(resp.choices[0].message.content)
+                    except Exception as e: st.error(f"오류: {e}")
