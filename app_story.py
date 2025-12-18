@@ -3,7 +3,7 @@ import os
 from openai import OpenAI
 
 # -------------------------------------------------------------------------
-# [설정] V33: 서울 해치 탐험 (Cinematic Video Intro)
+# [설정] V34: 서울 해치 탐험 (Simple Video Intro - No Gallery)
 # -------------------------------------------------------------------------
 st.set_page_config(
     layout="wide",
@@ -80,7 +80,7 @@ if "user_profile" not in st.session_state:
     st.session_state.user_profile = None
 
 # -------------------------------------------------------------------------
-# [화면 1] 인트로: 사용자 정보 입력 (Video Hero + Gallery)
+# [화면 1] 인트로: 사용자 정보 입력 (Simple Video Hero)
 # -------------------------------------------------------------------------
 if st.session_state.user_profile is None:
     st.title("🦁 서울 해치 탐험 : 입단 신청서")
@@ -89,10 +89,10 @@ if st.session_state.user_profile is None:
     with col1:
         st.markdown("### \"안녕? 우리는 서울을 지키는 해치 군단이야!\"")
         
-        # [핵심 로직] 동영상(mp4) > 이미지(main.png) > 나머지
+        # [핵심 로직] 갤러리 삭제! 오직 동영상(mp4) 또는 메인 이미지(png)만 표시
         intro_dir = "intro"
-        video_name = "main.mp4" # 1순위: 동영상
-        image_name = "main.png" # 2순위: 이미지
+        video_name = "main.mp4" 
+        image_name = "main.png" 
 
         try:
             if os.path.exists(intro_dir):
@@ -102,27 +102,13 @@ if st.session_state.user_profile is None:
                 if video_name in all_files:
                     video_path = os.path.join(intro_dir, video_name)
                     st.video(video_path, autoplay=True, loop=True, muted=True)
-                    st.markdown("---")
                 
-                # 2. 동영상이 없고 메인 이미지가 있으면 표시
+                # 2. (안전장치) 동영상이 없고 메인 이미지가 있으면 표시
                 elif image_name in all_files:
                     st.image(os.path.join(intro_dir, image_name), use_column_width=True)
-                    st.markdown("---")
                 
-                # 3. 나머지 이미지들 갤러리 (main.mp4, main.png 제외)
-                # 이미지 파일만 골라내기
-                gallery_images = [f for f in all_files if f.lower().endswith(('.png', '.jpg', '.jpeg'))]
-                # 메인 이미지는 갤러리에서 빼기 (중복 방지)
-                gallery_images = [img for img in gallery_images if img != image_name]
-                
-                if gallery_images:
-                    st.caption("👇 더 많은 친구들을 소개할게!")
-                    cols = st.columns(3)
-                    for i, img_file in enumerate(gallery_images):
-                        with cols[i % 3]:
-                            st.image(os.path.join(intro_dir, img_file), use_column_width=True)
-                elif not (video_name in all_files or image_name in all_files):
-                     st.warning("해치들이 아직 도착하지 않았소.")
+                else:
+                     st.info("인트로 영상을 준비 중이오. (main.mp4 필요)")
 
             else:
                  st.warning("아직 'intro' 폴더가 없군요.")
@@ -256,51 +242,4 @@ else:
             with st.chat_message(m["role"]): st.write(m["content"])
                 
         if user_input := st.chat_input(f"{selected_lang}로 말을 걸어보세요..."):
-            st.session_state.rp_messages.append({"role": "user", "content": user_input})
-            with st.chat_message("user"): st.write(user_input)
-            
-            if client:
-                sys_prompt = f"""
-                당신은 '{char['name']}'입니다. ({char['personality']}, {char['speech']})
-                상대방: {user['age']}세 {user['nationality']} {user['name']}
-                **중요: 반드시 {selected_lang}로 대화하세요.**
-                """
-                response = client.chat.completions.create(
-                    model="gpt-4",
-                    messages=[{"role": "system", "content": sys_prompt}] + st.session_state.rp_messages
-                )
-                ai_reply = response.choices[0].message.content
-                st.session_state.rp_messages.append({"role": "assistant", "content": ai_reply})
-                with st.chat_message("assistant"): st.write(ai_reply)
-
-    # [Tab 3] 이미지
-    with tab3:
-        st.subheader("🎨 상상화 그리기")
-        scene = st.text_input("어떤 장면을 그릴까요?")
-        if st.button("그림 생성"):
-            if client:
-                with st.spinner("그리는 중..."):
-                    p = f"Illustration of {char['name']} ({char['visual']}). Scene: {scene}. Target Audience Age: {user['age']}"
-                    try:
-                        res = client.images.generate(model="dall-e-3", prompt=p, size="1024x1024")
-                        st.image(res.data[0].url)
-                    except: st.error("오류 발생")
-
-    # [Tab 4] 작가 모드
-    with tab4:
-        st.subheader("👑 내가 만드는 새로운 전설")
-        col1, col2 = st.columns(2)
-        with col1: user_name = st.text_input("작가님 이름", value=user['name'])
-        with col2: keywords = st.text_input("소재 (예: AI, 우주선)")
-            
-        if st.button("✨ 새 전설 창작하기"):
-            if client and keywords:
-                with st.spinner("창작 중..."):
-                    prompt = f"""
-                    작가: {user_name} ({user['age']}세)
-                    주인공: {char['name']}
-                    소재: {keywords}
-                    {user['age']}세 작가의 눈높이에 맞는 재미있는 동화를 써주세요.
-                    """
-                    resp = client.chat.completions.create(model="gpt-4", messages=[{"role":"user", "content":prompt}])
-                    st.write(resp.choices[0].message.content)
+            st.session_state.rp
