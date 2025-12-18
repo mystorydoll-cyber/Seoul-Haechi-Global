@@ -3,263 +3,387 @@ import os
 from openai import OpenAI
 
 # -------------------------------------------------------------------------
-# [설정] V21: 미식가 해치 에디션 (Final Fix)
+# [설정] V40: 서울 해치 탐험 (Final Complete Code)
 # -------------------------------------------------------------------------
 st.set_page_config(
     layout="wide",
-    page_title="해치의 AI 여행 라운지",
+    page_title="서울 해치 탐험",
     page_icon="🦁",
     initial_sidebar_state="expanded"
 )
 
 # -------------------------------------------------------------------------
-# [데이터] 25개 자치구
+# [스타일] CSS (디자인 고도화: 폰트, 타이틀, 카드, 박스)
+# -------------------------------------------------------------------------
+st.markdown("""
+<style>
+    /* 1. 구글 웹폰트 (주아체) 임포트 */
+    @import url('https://fonts.googleapis.com/css2?family=Jua&display=swap');
+
+    /* 2. 메인 타이틀 스타일 */
+    .main-title {
+        font-family: 'Jua', sans-serif;
+        text-align: center;
+        font-size: 3.8rem !important;
+        color: #FF4B4B; /* 해치 레드 */
+        margin-bottom: 0.5rem;
+        text-shadow: 3px 3px 6px rgba(0,0,0,0.2);
+    }
+
+    /* 3. 서브 타이틀 및 인사말 스타일 */
+    .sub-title {
+        font-family: 'Jua', sans-serif;
+        text-align: center;
+        font-size: 2rem !important;
+        color: #555;
+        margin-bottom: 2rem;
+        line-height: 1.4;
+    }
+
+    /* [핵심] "안녕?" 강조 (하늘색 + 왕크게) */
+    .greeting-highlight {
+        font-size: 5rem !important;
+        color: #00ADD8; /* 청량한 하늘색 */
+        font-weight: bold;
+        text-shadow: 4px 4px 0px #eee;
+        display: block; /* 줄바꿈 */
+        margin-bottom: 10px;
+    }
+
+    /* 4. 입력 폼 카드 스타일 (그림자 박스) */
+    div[data-testid="stForm"] {
+        background-color: #f9f9f9;
+        padding: 30px;
+        border-radius: 20px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        border: 2px solid #eee;
+    }
+
+    /* 5. 왼쪽 하단 정보 박스 스타일 */
+    .info-box {
+        background-color: #e8f4f8;
+        padding: 20px;
+        border-radius: 15px;
+        margin-top: 20px;
+        border-left: 5px solid #FF4B4B;
+    }
+    .info-box h4 {
+         font-family: 'Jua', sans-serif;
+         color: #333;
+         margin-bottom: 10px;
+    }
+    .info-box p {
+        font-size: 0.95rem;
+        line-height: 1.5;
+        color: #555;
+    }
+</style>
+""", unsafe_allow_html=True)
+
+# -------------------------------------------------------------------------
+# [데이터] CEO 원천 소스 (5개 구)
 # -------------------------------------------------------------------------
 seoul_db = {
-    "종로구": {"name": "초롱해치", "trait": "박학다식", "desc": "경복궁과 서촌의 구석구석을 아는 가이드"},
-    "중구": {"name": "쇼퍼해치", "trait": "힙스터", "desc": "을지로(힙지로)와 명동의 맛집 네비게이션"},
-    "용산구": {"name": "어텐션해치", "trait": "글로벌", "desc": "이태원과 용리단길의 핫플 전문가"},
-    "성동구": {"name": "뚝해치", "trait": "감성적", "desc": "성수동 카페거리와 팝업스토어 알리미"},
-    "광진구": {"name": "광나루해치", "trait": "활기참", "desc": "건대 맛의 거리와 한강공원 피크닉 담당"},
-    "동대문구": {"name": "한약해치", "trait": "전통적", "desc": "경동시장과 청량리의 숨은 노포 맛집 탐험가"},
-    "중랑구": {"name": "장미해치", "trait": "로맨틱", "desc": "서울장미축제와 면목동의 힐링 코스 가이드"},
-    "성북구": {"name": "선잠해치", "trait": "예술적", "desc": "성북동 갤러리와 한옥 카페 투어 리더"},
-    "강북구": {"name": "북수해치", "trait": "자연친화", "desc": "북한산 둘레길과 4.19 카페거리 가이드"},
-    "도봉구": {"name": "호랭해치", "trait": "강인함", "desc": "도봉산 등산 코스와 창동 문화거리 안내원"},
-    "노원구": {"name": "태해치", "trait": "교육적", "desc": "경춘선 숲길과 불암산 힐링 타운 지킴이"},
-    "은평구": {"name": "진관해치", "trait": "여유로움", "desc": "은평한옥마을과 불광천 산책로 가이드"},
-    "서대문구": {"name": "홍지해치", "trait": "젊음", "desc": "신촌 이대 거리와 연희동 맛집 투어"},
-    "마포구": {"name": "가수해치", "trait": "열정적", "desc": "홍대 버스킹 거리와 망원시장 투어 대장"},
-    "양천구": {"name": "배움해치", "trait": "스마트", "desc": "목동의 학구열과 안양천 자전거길 안내"},
-    "강서구": {"name": "강초해치", "trait": "웰빙", "desc": "서울식물원과 마곡 카페거리 큐레이터"},
-    "구로구": {"name": "디지털해치", "trait": "미래지향", "desc": "G밸리의 IT단지와 깔깔거리 음식점 안내"},
-    "금천구": {"name": "봉제해치", "trait": "패션", "desc": "가산 디지털단지 아울렛 쇼핑 가이드"},
-    "영등포구": {"name": "등포해치", "trait": "다채로움", "desc": "여의도 더현대와 문래 창작촌 핫플 담당"},
-    "동작구": {"name": "현충해치", "trait": "성실함", "desc": "노량진 컵밥거리와 사육신 공원 안내자"},
-    "관악구": {"name": "낙성해치", "trait": "청년", "desc": "샤로수길 맛집과 관악산 등산로 가이드"},
-    "서초구": {"name": "법조해치", "trait": "클래식", "desc": "예술의 전당과 반포 한강공원 무지개분수 안내"},
-    "강남구": {"name": "패션해치", "trait": "럭셔리", "desc": "가로수길과 코엑스 청담동 명품거리 가이드"},
-    "송파구": {"name": "몽촌해치", "trait": "액티브", "desc": "롯데타워와 석촌호수 올림픽공원 데이트 코스"},
-    "강동구": {"name": "암사해치", "trait": "역사적", "desc": "암사 유적지와 강풀 만화거리 안내원"}
+    "종로구": {
+        "name": "초롱해치",
+        "role": "전통과 역사를 소중히 여기며 지키려는 마음을 가진 해치",
+        "personality": "진지하고 사려 깊은 성격",
+        "speech": "옛스런 어휘를 쓰며 점잖게 타이르는 '사극 톤' (~하오, ~다오)",
+        "story": "옛날 조선시대, 궁궐에서 밤길을 밝히던 초롱이 오랜 세월 빚어지면서 해치가 되었어요. 그는 궁궐의 균형을 지키며 밤을 밝히는 역할을 했어요. 그런데 어느 날, 경복궁과 창덕궁, 종묘의 도깨비들이 봉인을 깨고 탈출했어요! 초롱해치는 탈출한 도깨비들을 잡기 위해 종로로 나섰어요. 삼청동 붓가게에서 낙서를 하던 도깨비와 글씨 대결을, 인사동 찻집에선 차 시음 대결을 펼쳐 승리했죠. 마지막으로 광화문 네온사인에 홀린 도깨비에게 '네온사인은 변하지만 궁궐의 빛은 변하지 않아'라고 설득해 다시 돌려보냈답니다. 지금도 종로의 밤거리엔 내 눈빛이 서려 있다오.",
+        "welcome": "내 초롱은 언제나 빛나고 있어.",
+        "visual": "청사초롱을 들고 갓을 쓴 점잖은 모습의 분홍색 해치",
+        "item": "전통차 한 잔",
+        "keyword": "경복궁, 창덕궁, 종묘, 광화문, 전통차"
+    },
+    "중구": {
+        "name": "쇼퍼해치",
+        "role": "마법의 쇼핑백을 들고 사람들에게 필요한 물건을 찾아주는 도우미 도깨비",
+        "personality": "항상 새로운 물건을 찾는 데 열정적인 도깨비",
+        "speech": "활기차고 느낌표가 많은 '쇼호스트 톤' (~거든요!, ~라구요!)",
+        "story": "서울 중구의 번화한 거리에서 쇼핑을 사랑하는 도깨비, 쇼퍼해치가 살고 있었어요. 하루는 명동 거리에서 비싼 가격 때문에 치마를 못 사고 슬퍼하는 소녀를 봤어요. '걱정하지 마! 내가 너에게 딱 맞는 치마를 찾아줄게!' 쇼퍼해치는 마법의 쇼핑백을 꺼내 소녀에게 딱 맞는 예쁜 치마를 찾아주었죠. 남대문에서는 지갑 잃어버린 아저씨를 도와주고, 동대문에선 예쁜 신발을 찾아주었답니다. 쇼핑을 통해 사람들에게 행복을 주는 것이 나의 가장 큰 기쁨이야!",
+        "welcome": "이건 꼭 필요해! 나도 이거 사야지!",
+        "visual": "양손에 화려한 쇼핑백을 들고 선글라스를 낀 힙한 해치",
+        "item": "마법의 쇼핑백",
+        "keyword": "쇼핑, 예쁜 쇼핑백, 패션 아이템, 명동, 동대문"
+    },
+    "용산구": {
+        "name": "어텐션해치",
+        "role": "다양한 문화를 이어주며 이해와 평화를 이끄는 신비로운 도깨비",
+        "personality": "사려 깊고 경청하며, 항상 긍정적인 해결책을 찾는 성격",
+        "speech": "영어(Yo, Respect)를 섞어 쓰는 쿨한 '교포 힙합 톤'",
+        "story": "Hey! I'm Attention Haechi! 이태원과 용산 미군 기지 근처에는 세계 여러 나라 사람들의 이야기를 마법처럼 들을 수 있는 내가 살고 있지. 어느 날, 이태원에서 서로 다른 문화 때문에 갈등하는 외국인들을 만났어. 나는 그들의 고향 이야기를 들어주며 서로를 연결해 주었지. '다르다는 건 틀린 게 아니야.' 내 이야기는 이태원을 더욱 다채롭고 포용적인 곳으로 만들었단다. Peace!",
+        "welcome": "다른 사람의 이야기를 듣는 것이 세상을 이해하는 첫걸음이야.",
+        "visual": "헤드셋을 끼고 힙합 스타일 후드티를 입은 자유로운 영혼",
+        "item": "세계 지도 손수건",
+        "keyword": "이태원, 세계 음식, 다양성, 화합"
+    },
+    "성동구": {
+        "name": "뚝해치",
+        "role": "살곶이다리에 마법을 걸어 과거와 현재를 잇는 도깨비",
+        "personality": "신중하고 지혜로우며, 오래된 것을 소중히 여기는 성격",
+        "speech": "나긋나긋하고 감성적인 '동화 구연가 톤' (~했답니다, ~군요)",
+        "story": "옛날 성동구 살곶이다리에는 사람들의 발걸음을 지켜보는 뚝해치가 살았어요. 요즘 사람들이 스마트폰만 보며 다리의 이야기를 잊어가자, 나는 작은 마법을 걸었답니다. 다리를 지날 때 소원을 빌면 과거가 보이도록요! 한 꼬마가 소원을 빌자, 조선시대 말을 탄 장수와 선비의 모습이 눈앞에 펼쳐졌어요. '와! 이 다리는 이야기가 흐르는 곳이네요!' 그날 이후 살곶이다리는 다시 시간을 잇는 다리가 되었답니다.",
+        "welcome": "다리는 단순한 돌덩이가 아니라, 이야기가 흐르는 길이지!",
+        "visual": "오래된 돌망태를 메고 성수동 카페거리에 앉아있는 감성적인 해치",
+        "item": "작은 돌멩이",
+        "keyword": "살곶이다리, 성동구의 옛날 이야기, 성수동, 시간여행"
+    },
+    "광진구": {
+        "name": "광나루해치",
+        "role": "음식을 음미하는 기쁨을 나눠주는 미식 도깨비",
+        "personality": "미식가이며 장난기 많지만 진심으로 음식을 사랑함",
+        "speech": "맛을 음미하며 감탄사를 연발하는 '미식가 톤' (음~!, 캬~!)",
+        "story": "옛날 한강 나루터에는 미각이 뛰어난 광나루해치가 살았어요. '음, 서쪽 행신로 냄새! 오늘은 양꼬치군!' 그런데 사람들이 바쁘게 먹기만 하고 맛을 느끼지 못하자, 나는 장난을 쳤어요. 음식 냄새를 싹 없애버린 거죠! '어? 왜 곱창 냄새가 안 나지?' 사람들은 당황했고, 그제야 천천히 씹으며 맛을 음미하기 시작했어요. '아, 음식은 즐기는 거였지!' 나는 흐뭇하게 웃으며 냄새를 돌려주었답니다. 음~! 이게 한강의 맛이지!",
+        "welcome": "음~! 이건 그냥 맛있는 게 아니라, '진짜' 맛있는 거야!",
+        "visual": "한 손에 은색 숟가락을 들고 입맛을 다시는 통통한 해치",
+        "item": "작은 은색 숟가락",
+        "keyword": "한강, 양꼬치, 곱창, 미식, 맛있는 냄새"
+    }
 }
 
 # -------------------------------------------------------------------------
-# [UI] 사이드바
+# [로직] 사용자 프로필 관리 (Session State)
 # -------------------------------------------------------------------------
-with st.sidebar:
-    st.markdown("## 🦁 해치의 AI 여행 라운지")
-    st.caption("Haechi's AI Travel Lounge")
-    st.markdown("---")
-    
-    if "OPENAI_API_KEY" in st.secrets:
-        api_key = st.secrets["OPENAI_API_KEY"]
-        st.success("🔐 VIP 모드: 가이드 활성화됨")
-    else:
-        api_key = st.text_input("OpenAI API Key", type="password")
-        
-    client = OpenAI(api_key=api_key) if api_key else None
-    
-    st.markdown("---")
-    
-    st.markdown("### 📍 지역 선택")
-    region = st.selectbox("어디로 떠나볼까요?", list(seoul_db.keys()), label_visibility="collapsed")
-    char = seoul_db[region]
-    
-    st.markdown("---")
-    
-    with st.container(border=True):
-        st.markdown(f"### 🦁 {char['name']}")
-        st.caption(f"성격: {char['trait']} | 상태: 🟢 실시간 활동 중")
-        
-        gif_path = os.path.join("images", f"{region}_{char['name']}.gif")
-        png_path = os.path.join("images", f"{region}_{char['name']}.png")
-        
-        if os.path.exists(gif_path):
-            st.image(gif_path, use_column_width=True)
-        elif os.path.exists(png_path):
-            st.image(png_path, use_column_width=True)
-        else:
-            st.info("📸 이미지 준비 중...")
-        
-        st.info(f"Bot: \"{char['desc']}\"")
-
+if "user_profile" not in st.session_state:
+    st.session_state.user_profile = None
 
 # -------------------------------------------------------------------------
-# [메인] 화면 구성
+# [화면 1] 인트로: 사용자 정보 입력 (Start Screen)
 # -------------------------------------------------------------------------
-st.markdown("# 🇰🇷 서울 해치: 당신만의 AI 로컬 가이드")
-st.markdown("### Seoul Haechi: Your Personal AI Local Guide")
-st.markdown("---")
-
-local_video_path = "images/intro_video.mp4" 
-youtube_url = "https://youtu.be/YIpxEgUCpmA" 
-
-if os.path.exists(local_video_path):
-    st.video(local_video_path, autoplay=True, muted=True, loop=True)
-else:
-    try:
-        st.video(youtube_url, autoplay=True, muted=True, loop=True)
-    except:
-        pass
-
-st.markdown("---")
-col_h1, col_h2 = st.columns([2, 1])
-with col_h1:
-    st.markdown(f"## 🚩 지금 우리는 : **서울시 {region}**")
-    st.write(f"{region}의 숨은 매력을 {char['name']}와 함께 발견해보세요.")
-with col_h2:
-    with st.container(border=True):
-        st.metric(label="현재 라운지 상태", value="OPEN 🟢")
-
-st.markdown("---")
-
-# 탭 구성 (맛집 탭 포함 4개)
-tab1, tab2, tab3, tab4 = st.tabs(["🗺️ 여행 코스", "🍽️ 찐맛집 추천", "🎤 안내소 (음성)", "📸 인증샷"])
-
-# --- [Tab 1] 여행 코스 ---
-with tab1:
-    st.subheader(f"🗺️ {char['name']}의 상세 코스 & 인포그래픽 지도")
-    col1, col2 = st.columns(2)
+if st.session_state.user_profile is None:
+    # 1. 헤더 (타이틀 및 인사말)
+    st.markdown('<p class="main-title">🦁 서울 해치 탐험 : 입단 신청서</p>', unsafe_allow_html=True)
+    st.markdown('''
+    <p class="sub-title">
+        <span class="greeting-highlight">"안녕?"</span>
+        우리는 서울을 지키는 해치 군단이야!
+    </p>
+    ''', unsafe_allow_html=True)
+    st.markdown("---")
+    
+    # 2. 메인 레이아웃 (좌측 미디어 / 우측 폼)
+    col1, col2 = st.columns([1.5, 1], gap="large")
+    
     with col1:
-        who = st.selectbox("누구와 함께?", ["혼자", "연인과", "친구들과", "아이와 함께", "부모님 모시고"])
-    with col2:
-        theme = st.selectbox("여행 테마", ["감성 카페 투어", "역사/문화 탐방", "힐링 산책", "쇼핑/마켓", "야경 투어"])
+        # [왼쪽] 미디어 플레이어 (동영상 > 이미지)
+        intro_dir = "intro"
+        video_name = "main.mp4" 
+        image_name = "main.png" 
 
-    detail = st.text_input("추가 요청 (예: 3시간 코스, 주차 필수)", key="course_in")
-    
-    if "course_result" not in st.session_state:
-        st.session_state.course_result = ""
-    if "map_image_url" not in st.session_state:
-        st.session_state.map_image_url = ""
-
-    if st.button("🚀 상세 코스 브리핑 받기", type="primary"):
-        if not client:
-            st.warning("API Key 확인 필요")
-        else:
-            with st.spinner(f"{region} 데이터를 분석 중입니다..."):
-                try:
-                    prompt = f"당신은 {region} 가이드 '{char['name']}'. 사용자({who}, 테마:{theme}, 요청:{detail})를 위한 코스 작성. 1.코스요약 2.상세안내 3.마무리멘트. 형식:Markdown."
-                    resp = client.chat.completions.create(model="gpt-3.5-turbo", messages=[{"role":"user", "content":prompt}])
-                    st.session_state.course_result = resp.choices[0].message.content
-                    st.session_state.map_image_url = "" 
-                except Exception as e:
-                    st.error(f"오류: {e}")
-
-    if st.session_state.course_result:
-        st.markdown(st.session_state.course_result)
-        st.markdown("---")
-        st.subheader("🗺️ 이 코스를 지도로 보기")
-        
-        if st.button("🎨 AI 인포그래픽 지도 그리기"):
-            if not client:
-                st.warning("API Key 필요")
+        try:
+            if os.path.exists(intro_dir):
+                all_files = os.listdir(intro_dir)
+                if video_name in all_files:
+                    st.video(os.path.join(intro_dir, video_name), autoplay=True, loop=True, muted=True)
+                elif image_name in all_files:
+                    st.image(os.path.join(intro_dir, image_name), use_column_width=True)
+                else:
+                     st.info("🦁 인트로 미디어를 준비 중입니다. (intro 폴더 확인)")
             else:
-                with st.spinner("AI 화가가 지도를 그리는 중..."):
-                    try:
-                        summary_prompt = f"Summarize course in {region}: {st.session_state.course_result[:500]}"
-                        summary_resp = client.chat.completions.create(model="gpt-3.5-turbo", messages=[{"role":"user", "content":summary_prompt}])
-                        locations = summary_resp.choices[0].message.content
-                        
-                        image_prompt = f"Cute tourist map infographic of Seoul {region}. Locations: {locations}. Character '{char['name']}'. Clear text labels. High quality."
-                        res = client.images.generate(model="dall-e-3", prompt=image_prompt, size="1024x1024", quality="standard", n=1)
-                        st.session_state.map_image_url = res.data[0].url
-                    except:
-                        st.error("지도 실패")
+                 st.warning("⚠️ 'intro' 폴더가 없습니다.")
+        except Exception as e:
+             st.error(f"Error: {e}")
+             
+        # [왼쪽 하단] 정보 박스 (빈 공간 채우기)
+        st.markdown("""
+        <div class="info-box">
+            <h4>💡 해치란 무엇인가요?</h4>
+            <p>해치(Haechi)는 선과 악을 구별하고 정의를 지키는 전설 속의 동물입니다.<br>
+            서울의 수호신으로서 여러분의 안전한 여행을 지켜줄 거예요!</p>
+            <hr style="border-top: 1px solid #ccc; margin: 10px 0;">
+            <p style="font-size: 0.8em; color: gray;">
+            © 2025 My Story Doll & Seoul Haechi. All rights reserved.<br>
+            Powered by M-Unit AI Technology.
+            </p>
+        </div>
+        """, unsafe_allow_html=True)
 
-    if st.session_state.map_image_url:
-        st.image(st.session_state.map_image_url, caption=f"{region} 여행 지도")
-
-# --- [Tab 2] 찐맛집 추천 ---
-with tab2:
-    st.subheader(f"🍽️ {char['name']}가 보증하는 {region} 맛집")
-    st.caption("현지인만 아는 숨은 맛집부터 핫플레이스까지!")
-    
-    col_f1, col_f2 = st.columns(2)
-    with col_f1:
-        food_type = st.selectbox("음식 종류", ["한식 (노포/전통)", "양식 (파스타/스테이크)", "일식/아시아", "디저트/카페", "술집/바"])
-    with col_f2:
-        vibe = st.selectbox("선호하는 분위기", ["가성비 최고", "분위기 깡패", "조용한/룸", "뷰가 좋은", "회식/모임"])
-    
-    food_detail = st.text_input("먹고 싶은 메뉴나 상황 (예: 매운 떡볶이, 비오는 날 파전)", key="food_in")
-    
-    if st.button("🍴 맛집 리스트업", type="primary"):
-        if not client:
-            st.warning("API Key 필요")
-        else:
-            with st.spinner(f"{region} 골목골목 맛집 스캔 중..."):
-                try:
-                    prompt = f"""
-                    당신은 {region}의 미식가 '{char['name']}'입니다.
-                    사용자({food_type}, {vibe}, {food_detail})에게 딱 맞는 {region}의 **실제 맛집 3곳**을 추천해주세요.
-                    
-                    [출력 양식]
-                    1. **식당 이름 (실제 상호명)**
-                       - 🥘 **추천 메뉴:** (가격대 포함)
-                       - 💡 **특징:** (왜 추천하는지, 분위기 등)
-                       - 📍 **위치 힌트:** (예: OOO역 3번 출구 근처)
-                    
-                    마지막에는 '{char['trait']}' 말투로 "맛있게 먹어!"라고 인사해줘.
-                    """
-                    resp = client.chat.completions.create(model="gpt-3.5-turbo", messages=[{"role":"user", "content":prompt}])
-                    st.markdown(resp.choices[0].message.content)
-                except Exception as e:
-                    st.error(f"오류: {e}")
-
-# --- [Tab 3] 실시간 안내소 (음성) ---
-with tab3:
-    st.subheader(f"🎤 {char['name']}에게 물어보세요")
-    lang_col, _ = st.columns([1, 2])
-    with lang_col:
-        language = st.radio("Language", ["한국어", "English", "日本語", "中文"], horizontal=True)
-    
-    if "messages" not in st.session_state:
-        st.session_state.messages = []
+    with col2:
+        # [오른쪽] 입력 폼 (카드 디자인)
+        st.markdown("#### 🎫 탐험대원 등록 카드")
+        st.caption("너에 대해 알려주면 딱 맞는 해치를 소개해줄게!")
         
-    # [수정] 여기가 에러 났던 부분! 줄바꿈으로 완벽 해결!
-    for m in st.session_state.messages:
-        with st.chat_message(m["role"]):
-            st.write(m["content"])
+        with st.form("intro_form"):
+            name = st.text_input("이름 (Name)", placeholder="예: 길동이")
+            age = st.slider("나이 (Age)", 5, 100, 25)
+            
+            # 가로 배치 라디오 버튼
+            gender = st.radio("성별 (Gender)", ["남성", "여성", "기타"], horizontal=True)
+            nationality = st.selectbox("국적 (Nationality)", ["대한민국", "USA", "China", "Japan", "France", "Germany", "Other"])
+            
+            st.markdown("---")
+            st.caption("🚀 준비가 되었다면 아래 버튼을 눌러보세요!")
+            submitted = st.form_submit_button("해치 만나러 가기 (Start Adventure)", type="primary", use_container_width=True)
+            
+            if submitted and name:
+                st.session_state.user_profile = {
+                    "name": name,
+                    "age": age,
+                    "gender": gender,
+                    "nationality": nationality
+                }
+                st.rerun()
+            elif submitted and not name:
+                st.error("이름을 알려줘야 시작할 수 있어!")
 
-    if chat_in := st.chat_input("질문 입력..."):
-        st.session_state.messages.append({"role":"user", "content":chat_in})
-        with st.chat_message("user"):
-            st.write(chat_in)
-            
-        if client:
-            with st.spinner("생각 중..."):
-                sys = f"너는 {region} 가이드 '{char['name']}'. 언어:{language}. 톤:{char['trait']}하고 활기참."
-                resp = client.chat.completions.create(model="gpt-3.5-turbo", messages=[{"role":"system", "content":sys}] + st.session_state.messages)
-                ai_text = resp.choices[0].message.content
-            
-            st.session_state.messages.append({"role":"assistant", "content":ai_text})
-            
-            with st.chat_message("assistant"):
-                st.write(ai_text)
-                try:
-                    response = client.audio.speech.create(model="tts-1", voice="nova", input=ai_text)
-                    response.stream_to_file("speech.mp3")
-                    st.audio("speech.mp3")
-                except:
-                    pass
-
-# --- [Tab 4] 인증샷 ---
-with tab4:
-    st.subheader(f"📸 {char['name']}와 함께 찰칵")
-    style = st.selectbox("화풍 선택", ["웹툰 스타일", "수채화", "실사 풍경", "3D 캐릭터"])
-    desc_input = st.text_input("상황 설명", key="img_input")
+# -------------------------------------------------------------------------
+# [화면 2] 메인 앱 (Main Application)
+# -------------------------------------------------------------------------
+else:
+    user = st.session_state.user_profile
     
-    if st.button("🖌️ 기념사진 생성", type="primary"):
-        if not client:
-            st.error("API Key 필요")
+    # 1. 사이드바 (설정 및 캐릭터 선택)
+    with st.sidebar:
+        st.title(f"반갑소, {user['name']}!")
+        st.caption(f"{user['age']}세 / {user['nationality']}")
+        
+        if st.button("🔄 내 정보 다시 입력하기"):
+            st.session_state.user_profile = None
+            st.rerun()
+        st.markdown("---")
+        
+        st.markdown("### 🌐 언어 모드 (Language)")
+        lang_options = ["한국어", "English", "中文 (Chinese)", "日本語 (Japanese)", "Français (French)", "Deutsch (German)"]
+        
+        default_idx = 0
+        if user['nationality'] == "USA": default_idx = 1
+        elif user['nationality'] == "China": default_idx = 2
+        elif user['nationality'] == "Japan": default_idx = 3
+        
+        selected_lang = st.selectbox("대화 언어 선택", lang_options, index=default_idx)
+        st.markdown("---")
+        
+        if "OPENAI_API_KEY" in st.secrets:
+            api_key = st.secrets["OPENAI_API_KEY"]
         else:
-            with st.spinner("사진 인화 중..."):
-                try:
-                    p = f"Character '{char['name']}' in Seoul {region}, {desc_input}. Style: {style}."
-                    res = client.images.generate(model="dall-e-3", prompt=p, size="1024x1024", quality="standard", n=1)
-                    st.image(res.data[0].url)
-                except Exception as e:
-                    st.error(f"실패: {e}")
+            api_key = st.text_input("OpenAI API Key", type="password", placeholder="sk-...")
+        
+        # 클라이언트 연결 시도
+        client = None
+        if api_key:
+            try:
+                client = OpenAI(api_key=api_key)
+            except: pass
+        
+        if not client:
+            st.error("🚨 왼쪽 칸에 API Key를 넣고 [ENTER]를 쳐주세요!")
+        
+        st.markdown("### 📍 탐험할 지역 선택")
+        region = st.selectbox("어느 구의 해치를 만날까?", list(seoul_db.keys()))
+        char = seoul_db[region]
+        
+        # 캐릭터 카드 표시
+        with st.container(border=True):
+            st.subheader(f"✨ {char['name']}")
+            st.caption(f"{char['role']}")
+            
+            img_name = f"{region}_{char['name']}.png"
+            if os.path.exists(img_name):
+                st.image(img_name)
+            else:
+                st.info(f"📸 {char['visual']}")
+            st.markdown(f"**🔑 키워드:** {char['keyword']}")
 
-# 푸터
-st.markdown("---")
-st.markdown("<div style='text-align: center; color: gray;'>ⓒ 2024 Seoul AI Local Docent Platform. Powered by M-Unit & OpenAI.</div>", unsafe_allow_html=True)
+    # 2. 메인 컨텐츠 영역
+    st.markdown(f"# 🗺️ {region} 해치 탐험 : {char['name']}와의 만남")
+    
+    if client and "welcome_msg" not in st.session_state:
+        pass 
+    st.info(f"👋 **{char['name']}**: \"어서 와, {user['name']}! ({selected_lang} 모드 작동 중)\"")
+    st.markdown("---")
+
+    # 3. 탭 메뉴 (기능별)
+    tab1, tab2, tab3, tab4 = st.tabs(["📜 전설 듣기", "🗣️ 수다 떨기", "🎨 삽화 그리기", "✍️ 나도 전설 작가"])
+
+    # [Tab 1] 전설 듣기 (Story & TTS)
+    with tab1:
+        st.subheader(f"📖 {char['name']}의 이야기 보따리")
+        
+        if st.button(f"▶️ 이야기 들려주세요 ({selected_lang})", type="primary"):
+            if not client: st.error("🚨 API Key가 필요합니다!")
+            else:
+                with st.spinner(f"{user['name']}님을 위해 이야기를 각색하는 중..."):
+                    try:
+                        prompt = f"""
+                        당신은 '{char['name']}'입니다.
+                        [원래 이야기]: {char['story']}
+                        [말투]: {char['speech']}
+                        [사용자 정보]: {user['age']}세, {user['nationality']}, {user['name']}
+                        [필수 언어]: **{selected_lang}**로 답변하세요.
+                        [미션]: 위 사용자가 가장 흥미로워하고 이해하기 쉽게 이야기를 '각색'해서 들려주세요.
+                        """
+                        resp = client.chat.completions.create(model="gpt-4", messages=[{"role":"user", "content":prompt}])
+                        full_story = resp.choices[0].message.content
+                        st.write(full_story)
+
+                        with st.spinner("목소리 가다듬는 중..."):
+                            tts_res = client.audio.speech.create(model="tts-1", voice="onyx", input=full_story[:4096])
+                            tts_res.stream_to_file("story_audio.mp3")
+                            st.audio("story_audio.mp3", format="audio/mp3")
+                    except Exception as e: st.error(f"오류: {e}")
+
+    # [Tab 2] 수다 떨기 (Chatbot)
+    with tab2:
+        st.subheader(f"🗣️ {char['name']}와 {selected_lang}로 대화하기")
+        if "rp_messages" not in st.session_state: st.session_state.rp_messages = []
+        
+        for m in st.session_state.rp_messages:
+            with st.chat_message(m["role"]): st.write(m["content"])
+            
+        if user_input := st.chat_input(f"{selected_lang}로 말을 걸어보세요..."):
+            st.session_state.rp_messages.append({"role": "user", "content": user_input})
+            with st.chat_message("user"): st.write(user_input)
+            
+            if client:
+                try:
+                    sys_prompt = f"""
+                    당신은 '{char['name']}'입니다. ({char['personality']}, {char['speech']})
+                    상대방: {user['age']}세 {user['nationality']} {user['name']}
+                    **중요: 반드시 {selected_lang}로 대화하세요.**
+                    """
+                    response = client.chat.completions.create(
+                        model="gpt-4",
+                        messages=[{"role": "system", "content": sys_prompt}] + st.session_state.rp_messages
+                    )
+                    ai_reply = response.choices[0].message.content
+                    st.session_state.rp_messages.append({"role": "assistant", "content": ai_reply})
+                    with st.chat_message("assistant"): st.write(ai_reply)
+                except Exception as e: st.error(f"오류: {e}")
+            else: st.error("🚨 API Key가 필요합니다!")
+
+    # [Tab 3] 이미지 생성 (DALL-E)
+    with tab3:
+        st.subheader("🎨 상상화 그리기")
+        scene = st.text_input("어떤 장면을 그릴까요?", placeholder="예: 떡볶이 먹는 해치")
+        if st.button("그림 생성"):
+            if client:
+                with st.spinner("그리는 중..."):
+                    try:
+                        p = f"Illustration of {char['name']} ({char['visual']}). Scene: {scene}. Target Audience Age: {user['age']}"
+                        res = client.images.generate(model="dall-e-3", prompt=p, size="1024x1024")
+                        st.image(res.data[0].url)
+                    except Exception as e: st.error(f"오류: {e}")
+            else: st.error("🚨 API Key가 필요합니다!")
+
+    # [Tab 4] 작가 모드 (Story Writer)
+    with tab4:
+        st.subheader("👑 내가 만드는 새로운 전설")
+        col1, col2 = st.columns(2)
+        with col1: user_name = st.text_input("작가님 이름", value=user['name'])
+        with col2: keywords = st.text_input("소재 (예: AI, 우주선)")
+        
+        if st.button("✨ 새 전설 창작하기"):
+            if not client: st.error("🚨 API Key가 필요합니다!")
+            elif not keywords: st.warning("소재를 입력해주세요!")
+            else:
+                with st.spinner("창작 중..."):
+                    try:
+                        prompt = f"""
+                        작가: {user_name} ({user['age']}세)
+                        주인공: {char['name']}
+                        소재: {keywords}
+                        {user['age']}세 작가의 눈높이에 맞는 재미있는 동화를 써주세요.
+                        """
+                        resp = client.chat.completions.create(model="gpt-4", messages=[{"role":"user", "content":prompt}])
+                        st.write(resp.choices[0].message.content)
+                    except Exception as e: st.error(f"오류: {e}")
