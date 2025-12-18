@@ -3,7 +3,7 @@ import os
 from openai import OpenAI
 
 # -------------------------------------------------------------------------
-# [설정] V42: 서울 해치 탐험 (Lore Expanded)
+# [설정] V43: 서울 해치 탐험 (HTML Rendering Fix)
 # -------------------------------------------------------------------------
 st.set_page_config(
     layout="wide",
@@ -17,10 +17,8 @@ st.set_page_config(
 # -------------------------------------------------------------------------
 st.markdown("""
 <style>
-    /* 폰트: 주아체 (제목용) */
     @import url('https://fonts.googleapis.com/css2?family=Jua&display=swap');
 
-    /* 메인 타이틀 */
     .main-title {
         font-family: 'Jua', sans-serif;
         text-align: center;
@@ -29,8 +27,6 @@ st.markdown("""
         margin-bottom: 0.5rem;
         text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
     }
-
-    /* 서브 타이틀 */
     .sub-title {
         font-family: 'Jua', sans-serif;
         text-align: center;
@@ -38,8 +34,6 @@ st.markdown("""
         color: #555;
         margin-bottom: 2rem;
     }
-
-    /* 입력 폼 카드 스타일 */
     div[data-testid="stForm"] {
         background-color: #f9f9f9;
         padding: 30px;
@@ -47,8 +41,7 @@ st.markdown("""
         box-shadow: 0 4px 15px rgba(0,0,0,0.1);
         border: 2px solid #eee;
     }
-
-    /* 왼쪽 하단 정보 박스 (내용이 많아져서 스타일 미세 조정) */
+    /* 정보 박스 디자인 */
     .info-box {
         background-color: #e8f4f8;
         padding: 25px;
@@ -56,24 +49,26 @@ st.markdown("""
         margin-top: 20px;
         border-left: 6px solid #FF4B4B;
         box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        color: #333; /* 글자색 강제 지정 */
     }
     .info-box h4 {
-         font-family: 'Jua', sans-serif;
-         color: #333;
-         font-size: 1.4rem;
+         font-family: 'Jua', sans-serif !important;
+         color: #333 !important;
+         font-size: 1.5rem !important;
          margin-bottom: 15px;
          border-bottom: 2px dashed #b3d7ff;
          padding-bottom: 10px;
     }
     .info-item {
         margin-bottom: 12px;
-        font-size: 0.95rem;
-        line-height: 1.5;
+        font-size: 1rem;
+        line-height: 1.6;
         color: #444;
     }
     .info-item strong {
         color: #007bff;
         font-weight: 700;
+        font-size: 1.1rem;
     }
     .copyright {
         font-size: 0.8em; 
@@ -155,7 +150,7 @@ if "user_profile" not in st.session_state:
 # [화면 1] 인트로: 입단 신청서
 # -------------------------------------------------------------------------
 if st.session_state.user_profile is None:
-    # 제목 영역
+    # 1. 헤더 (타이틀)
     st.markdown('<p class="main-title">🦁 서울 해치 탐험 : 입단 신청서</p>', unsafe_allow_html=True)
     st.markdown('<p class="sub-title">"안녕? 우리는 서울을 지키는 해치 군단이야!"</p>', unsafe_allow_html=True)
     st.markdown("---")
@@ -163,7 +158,7 @@ if st.session_state.user_profile is None:
     col1, col2 = st.columns([1.5, 1], gap="large")
     
     with col1:
-        # 1. 미디어 플레이어
+        # 1-1. 미디어 플레이어
         intro_dir = "intro"
         video_name = "main.mp4" 
         image_name = "main.png" 
@@ -182,8 +177,8 @@ if st.session_state.user_profile is None:
         except Exception as e:
              st.error(f"Error: {e}")
              
-        # [NEW] 2. 정보 박스 (내용 대폭 강화)
-        st.markdown("""
+        # 1-2. [수정됨] 정보 박스 (변수로 분리하여 안전하게 렌더링)
+        info_html = """
         <div class="info-box">
             <h4>💡 해치(Haechi)는 어떤 친구인가요?</h4>
             
@@ -210,10 +205,12 @@ if st.session_state.user_profile is None:
             Powered by M-Unit AI Technology.
             </div>
         </div>
-        """, unsafe_allow_html=True)
+        """
+        # ★ 여기가 중요! unsafe_allow_html=True를 꼭 넣어서 HTML로 해석하게 함
+        st.markdown(info_html, unsafe_allow_html=True)
 
     with col2:
-        # 3. 입력 카드
+        # 2. 입력 카드
         st.markdown("#### 🎫 탐험대원 등록 카드")
         st.caption("너에 대해 알려주면 딱 맞는 해치를 소개해줄게!")
         
@@ -221,7 +218,6 @@ if st.session_state.user_profile is None:
             name = st.text_input("이름 (Name)", placeholder="예: 길동이")
             age = st.slider("나이 (Age)", 5, 100, 25)
             
-            # 가로 배치 라디오 버튼
             gender = st.radio("성별 (Gender)", ["남성", "여성", "기타"], horizontal=True)
             nationality = st.selectbox("국적 (Nationality)", ["대한민국", "USA", "China", "Japan", "France", "Germany", "Other"])
             
@@ -270,7 +266,6 @@ else:
         else:
             api_key = st.text_input("OpenAI API Key", type="password", placeholder="sk-...")
         
-        # 클라이언트 연결
         client = None
         if api_key:
             try:
