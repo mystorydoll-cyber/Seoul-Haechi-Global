@@ -451,4 +451,56 @@ else:
             st.session_state.rp_messages.append({"role": "user", "content": user_input})
             with st.chat_message("user"): st.write(user_input)
             
-            if client
+            if client:
+                try:
+                    sys_prompt = f"""
+                    당신은 '{char['name']}'입니다. ({char['personality']}, {char['speech']})
+                    상대방: {user['age']}세 {user['nationality']} {user['name']}
+                    **중요: 반드시 {selected_lang}로 대화하세요.**
+                    """
+                    response = client.chat.completions.create(
+                        model="gpt-4",
+                        messages=[{"role": "system", "content": sys_prompt}] + st.session_state.rp_messages
+                    )
+                    ai_reply = response.choices[0].message.content
+                    st.session_state.rp_messages.append({"role": "assistant", "content": ai_reply})
+                    with st.chat_message("assistant"): st.write(ai_reply)
+                except Exception as e: st.error(f"오류: {e}")
+            else: st.error("🚨 API Key가 필요합니다!")
+
+    # [Tab 3] 이미지
+    with tab3:
+        st.subheader("🎨 상상화 그리기")
+        scene = st.text_input("어떤 장면을 그릴까요?", placeholder="예: 떡볶이 먹는 해치")
+        if st.button("그림 생성"):
+            if client:
+                with st.spinner("그리는 중..."):
+                    try:
+                        p = f"Illustration of {char['name']} ({char['visual']}). Scene: {scene}. Target Audience Age: {user['age']}"
+                        res = client.images.generate(model="dall-e-3", prompt=p, size="1024x1024")
+                        st.image(res.data[0].url)
+                    except Exception as e: st.error(f"오류: {e}")
+            else: st.error("🚨 API Key가 필요합니다!")
+
+    # [Tab 4] 작가 모드
+    with tab4:
+        st.subheader("👑 내가 만드는 새로운 전설")
+        col1, col2 = st.columns(2)
+        with col1: user_name = st.text_input("작가님 이름", value=user['name'])
+        with col2: keywords = st.text_input("소재 (예: AI, 우주선)")
+        
+        if st.button("✨ 새 전설 창작하기"):
+            if not client: st.error("🚨 API Key가 필요합니다!")
+            elif not keywords: st.warning("소재를 입력해주세요!")
+            else:
+                with st.spinner("창작 중..."):
+                    try:
+                        prompt = f"""
+                        작가: {user_name} ({user['age']}세)
+                        주인공: {char['name']}
+                        소재: {keywords}
+                        {user['age']}세 작가의 눈높이에 맞는 재미있는 동화를 써주세요.
+                        """
+                        resp = client.chat.completions.create(model="gpt-4", messages=[{"role":"user", "content":prompt}])
+                        st.write(resp.choices[0].message.content)
+                    except Exception as e: st.error(f"오류: {e}")
