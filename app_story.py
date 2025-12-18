@@ -4,7 +4,7 @@ import unicodedata
 from openai import OpenAI
 
 # -------------------------------------------------------------------------
-# [설정] V59: 서울 해치 탐험 (비주얼 강화 & 메인 스테이지 배치)
+# [설정] V60: 인트로 복원 & 메인 캐릭터 슈퍼 사이즈 (Intro Restored & Big Character)
 # -------------------------------------------------------------------------
 st.set_page_config(
     layout="wide",
@@ -31,65 +31,92 @@ def find_image_file(region, char_name):
     return None
 
 # -------------------------------------------------------------------------
-# [스타일] CSS (폰트 및 카드 디자인 강화)
+# [스타일] CSS (폰트 및 디자인)
 # -------------------------------------------------------------------------
 st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Jua&display=swap');
 
     /* 전체 폰트 적용 */
-    h1, h2, h3, h4, .stMarkdown, p, div, span {
+    h1, h2, h3, h4, .stMarkdown, p, div, span, button, input, label {
         font-family: 'Jua', sans-serif !important;
     }
 
-    /* 캐릭터 이름 강조 */
-    .char-title {
-        font-size: 3.2rem !important;
-        color: #FF4B4B;
-        margin-bottom: 0px;
-        text-shadow: 2px 2px 0px #eee;
+    /* --- [인트로 스타일 복원] --- */
+    .main-title {
+        text-align: center;
+        font-size: 3.5rem !important;
+        color: #FF4B4B; 
+        margin-bottom: 0.5rem;
+        text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
     }
-    
-    /* 캐릭터 역할 강조 */
-    .char-role {
-        font-size: 1.5rem !important;
+    .sub-title {
+        text-align: center;
+        font-size: 1.8rem !important;
         color: #555;
-        margin-bottom: 20px;
-        border-bottom: 3px solid #FFD700;
-        display: inline-block;
-        padding-bottom: 5px;
+        margin-bottom: 2rem;
+    }
+    .info-box {
+        background-color: #e8f4f8;
+        padding: 25px;
+        border-radius: 15px;
+        margin-top: 20px;
+        border-left: 6px solid #FF4B4B;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        color: #333;
     }
 
-    /* 설명 박스 스타일 */
-    .desc-box {
-        background-color: #fff;
-        border: 2px solid #eee;
-        border-radius: 15px;
+    /* --- [메인 앱 스타일 강화] --- */
+    .char-header {
+        font-size: 3.5rem !important;
+        color: #333;
+        margin-bottom: 20px;
+        text-align: center;
+        background: linear-gradient(to right, #f8f9fa, #e9ecef);
         padding: 20px;
-        box-shadow: 0 4px 10px rgba(0,0,0,0.05);
-        margin-bottom: 10px;
+        border-radius: 20px;
+    }
+    .char-header span {
+        color: #FF4B4B;
+        text-decoration: underline;
+        text-decoration-color: #FFD700;
+        text-decoration-style: wavy;
     }
     
-    /* 말풍선 스타일 */
-    .speech-bubble {
-        background-color: #E8F4F8;
-        border-radius: 20px;
-        padding: 15px 25px;
-        color: #333;
-        font-size: 1.2rem;
-        margin-top: 10px;
-        border: 2px solid #B3D7FF;
-        position: relative;
+    /* 캐릭터 이름 (오른쪽 패널) */
+    .big-name {
+        font-size: 4rem !important;
+        color: #FF4B4B;
+        margin-top: 0;
+        line-height: 1.2;
     }
-
-    /* 이미지 강조 */
-    img {
-        border-radius: 20px;
-        box-shadow: 0 4px 15px rgba(0,0,0,0.15);
-        transition: transform 0.3s;
+    .big-role {
+        font-size: 1.8rem !important;
+        color: #666;
+        margin-bottom: 30px;
+        font-weight: bold;
     }
-    img:hover {
-        transform: scale(1.02);
+    
+    /* 설명 카드 */
+    .stat-card {
+        background-color: #fff;
+        border: 3px solid #eee;
+        border-radius: 20px;
+        padding: 25px;
+        font-size: 1.3rem;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+        margin-bottom: 20px;
+    }
+    .welcome-bubble {
+        background-color: #FFF3CD;
+        border: 3px solid #FFEeba;
+        border-radius: 30px;
+        padding: 20px;
+        font-size: 1.5rem;
+        text-align: center;
+        color: #856404;
+        font-weight: bold;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.1);
     }
 </style>
 """, unsafe_allow_html=True)
@@ -226,262 +253,4 @@ seoul_db = {
         "role": """용기와 희망을 나눠주며 사람들을 지키는 도깨비""",
         "personality": """조용하지만 강한 신념을 가짐""",
         "speech": """단호하고 힘찬 '독립투사 톤' (~해야 하오! 할 수 있소!)""",
-        "story": """서대문 형무소의 아픈 역사를 지켜보며, 사람들에게 '용기'를 불어넣기로 결심한 해치입니다. 독립문 근처에서 바람이 불면 홍지해치가 건네는 위로와 희망의 목소리를 들을 수 있답니다.""",
-        "welcome": """희망이 보이지 않는다고 없는 건 아니오. 용기를 내시오!""",
-        "visual": """한 손에 밝게 빛나는 희망의 등불을 든 해치""",
-        "keyword": """서대문형무소, 독립문, 역사, 희망"""
-    },
-    "마포구": {
-        "name": """가수해치""",
-        "role": """세상에 잊히지 않을 음악을 퍼뜨리는 가수 도깨비""",
-        "personality": """자유롭고 감성적이며, 음악에 진심인 낭만가""",
-        "speech": """감미롭고 리듬감 있는 '싱어송라이터 톤'""",
-        "story": """홍대 거리의 음악 소리가 사라지는 것이 슬퍼, 사람들의 마음에 다시 노래를 심어주러 온 해치입니다. 버스킹 하는 청춘들 곁에서 마법의 마이크로 그들의 목소리가 더 멀리 퍼지게 도와준답니다.""",
-        "welcome": """소리는 사라지지 않아. 네 마음에 남아 있거든!""",
-        "visual": """통기타를 메고 마법 마이크를 든 힙한 해치""",
-        "keyword": """홍대, 버스킹, 음악, 젊음"""
-    },
-    "양천구": {
-        "name": """배움해치""",
-        "role": """교육에 힘쓰는 교육자 도깨비""",
-        "personality": """호기심이 많고 배움을 나누는 것을 좋아함""",
-        "speech": """친절하고 격려하는 '선생님 톤' (참 잘했어요~)""",
-        "story": """세상의 모든 지식을 알고 싶은 호기심 대장! 혼자 아는 것보다 나누는 기쁨을 깨닫고, 공부하는 학생들에게 집중력을 선물해 줍니다. 양천구의 학구열은 바로 배움해치의 응원 덕분이랍니다.""",
-        "welcome": """배움은 혼자 하는 게 아니야! 내가 도와줄게.""",
-        "visual": """학사모를 쓰고 마법의 분필을 든 똑똑한 해치""",
-        "keyword": """목동, 교육, 도서관, 배움"""
-    },
-    # --- [4차: 서남권] ---
-    "강서구": {
-        "name": """강초해치""",
-        "role": """강서구의 자연과 문화를 잇는 현명한 초록빛 도깨비""",
-        "personality": """온화하고 친절하며, 자연을 사랑하는 다정함""",
-        "speech": """나긋나긋하고 편안한 '식물원 정원사 톤'""",
-        "story": """서울식물원의 식물들이 시들어갈 때, 전설의 생명 씨앗을 찾아내어 식물원을 구한 영웅입니다. 겸재정선미술관의 검은 기운도 강서의 바람으로 정화했죠. 강서구의 푸른 자연은 강초해치가 지금도 지키고 있답니다.""",
-        "welcome": """세상 하나에도 우주의 기운이 깃들어 있어.""",
-        "visual": """꽃으로 장식된 모자를 쓴 초록빛 해치""",
-        "keyword": """서울식물원, 허준박물관, 겸재정선미술관, 자연"""
-    },
-    "구로구": {
-        "name": """디지털해치""",
-        "role": """회색 공단에서 찬란한 디지털 단지로 변화를 이끄는 도깨비""",
-        "personality": """혁신과 변화를 즐기며, 트렌드에 민감함""",
-        "speech": """똑부러지고 스마트한 'IT 개발자 톤' (입력 완료!)""",
-        "story": """과거 구로공단의 기계 소리보다 디지털 장비의 신호음을 더 좋아했던 호기심 많은 도깨비. 회색 빛 공장이 첨단 디지털 단지로 변하는 것을 도우며, 창의적인 에너지를 불어넣고 있어요.""",
-        "welcome": """디지털과 문화가 만나는 곳, 이곳에서 모두 연결된다!""",
-        "visual": """반짝이는 스마트폰과 태블릿을 든 스마트한 해치""",
-        "keyword": """G밸리, 구로디지털단지, 혁신, IT"""
-    },
-    "금천구": {
-        "name": """봉제해치""",
-        "role": """봉제 산업의 역사와 문화 창작을 이어주는 따뜻한 에너지의 도깨비""",
-        "personality": """따뜻하고 긍정적이며, 노동의 가치를 소중히 여김""",
-        "speech": """다정하고 챙겨주는 '친절한 언니 톤' (힘내요!)""",
-        "story": """옛 구로공단 시절, 밤낮없이 일하는 여공들의 꿈을 응원하기 위해 나타났습니다. 마법의 실타래로 그녀들의 옷 만드는 일을 돕고, 고단한 삶에 희망을 엮어주었죠. 지금도 금천구에서 창작의 열정을 응원하고 있답니다.""",
-        "welcome": """옷을 만든다고? 그럼 당신의 꿈도 함께 만들어보세요!""",
-        "visual": """실타래와 줄자를 목에 건 따뜻한 인상의 해치""",
-        "keyword": """봉제공장, G밸리, 노동의가치, 희망"""
-    },
-    "영등포구": {
-        "name": """등포해치""",
-        "role": """과거의 영등포를 추억하고 변화를 긍정하는 따뜻한 도깨비""",
-        "personality": """변화를 두려워하지 않고 조화를 즐기는 성격""",
-        "speech": """유쾌하고 긍정적인 '예술가 톤' (변화는 좋은 거야!)""",
-        "story": """오래된 밀가루 공장(대선제분)의 기계 소리를 들으며 살던 도깨비. 공장이 문을 닫자 슬퍼했지만, 그곳이 멋진 문화 공간으로 변하는 것을 보고 깨달았어요. '변한다는 건 새로운 이야기가 시작되는 거야!'""",
-        "welcome": """변화가 나쁜 게 아니니까! 즐겨보자고!""",
-        "visual": """톱니바퀴 장식을 달고 붓을 든 힙한 해치""",
-        "keyword": """문래창작촌, 타임스퀘어, 대선제분, 변화"""
-    },
-    "동작구": {
-        "name": """현충해치""",
-        "role": """나라를 지킨 영웅들을 존경하며 현충원을 돌보는 도깨비""",
-        "personality": """붙임성이 좋고 감사하는 마음이 깊음""",
-        "speech": """예의 바르고 정중한 '감사 톤' (고맙습니다, 잊지 않겠습니다)""",
-        "story": """노량진 시장의 활기찬 기운을 좋아했지만, 국립서울현충원이 생긴 후 그곳의 수호자가 되기로 결심했습니다. 매일 밤 순국선열들의 비석을 닦으며 그들의 이야기를 들어주고, 방문객들에게 감사의 마음을 전합니다.""",
-        "welcome": """고맙습니다. 그 희생을 잊지 않겠습니다.""",
-        "visual": """하얀 국화 꽃다발을 들고 있는 단정한 해치""",
-        "keyword": """국립서울현충원, 노량진, 호국영령, 감사"""
-    },
-    # --- [5차: 동남권 및 관악 (FINAL)] ---
-    "관악구": {
-        "name": """낙성해치""",
-        "role": """별빛으로 꿈을 향한 용기를 불어넣어 주는 도깨비""",
-        "personality": """온화하고 지혜로운 도깨비로, 사람들에게 꿈과 희망을 선물하는 일을 좋아함""",
-        "speech": """지혜롭고 희망찬 '멘토 톤' (~할 수 있다, ~믿는다)""",
-        "story": """서울 관악구 낙성대, 강감찬 장군이 태어난 이곳에 별빛을 지키는 낙성해치가 살고 있어요. 낙성해치는 떨어진 별똥별을 주워 담아 고시촌에서 공부하는 학생들에게 꿈과 희망의 빛을 선물한답니다.""",
-        "welcome": """별빛을 잃지 않도록 노력하라. 세상은 우리의 꿈으로 이루어져 있다.""",
-        "visual": """별을 수집하는 바구니를 든 해치""",
-        "keyword": """낙성대, 강감찬, 별빛, 고시촌, 꿈"""
-    },
-    "서초구": {
-        "name": """법조해치""",
-        "role": """공정한 판결을 이끌어 내는 정의로운 도깨비""",
-        "personality": """공정하고 지혜로운 꼼꼼한 성격""",
-        "speech": """논리적이고 명확한 '판사님 톤' (정의는 살아있다!)""",
-        "story": """서초구 법조타운의 법전들 사이에서 태어난 해치. 억울한 일을 당한 사람들을 위해 법조인들의 꿈속에 나타나 지혜로운 조언을 속삭여줍니다. 그의 서재에는 누구나 공평하게 펼쳐볼 수 있는 정의의 법전이 있답니다.""",
-        "welcome": """법은 올바르게 쓰여야 해.""",
-        "visual": """작은 저울(공정함)과 빛나는 법전을 든 해치""",
-        "keyword": """예술의전당, 법조타운, 서리풀공원, 정의"""
-    },
-    "강남구": {
-        "name": """패션해치""",
-        "role": """항상 세련됨을 추구하는 디자이너 도깨비""",
-        "personality": """감각적이고 창의적이며 트렌드에 민감함""",
-        "speech": """시크하고 세련된 '디자이너 톤' (스타일은 유행이 아니야)""",
-        "story": """한양 시절부터 옷차림을 연구하던 해치가 현대 강남의 패션 중심지에서 깨어났습니다. 압구정과 청담동을 누비며 사람들의 개성을 찾아주고, 마법의 실타래로 세상에 하나뿐인 스타일을 만들어줍니다.""",
-        "welcome": """스타일은 유행이 아니라 태도야.""",
-        "visual": """마법의 실타래와 줄자를 든 스타일리시한 해치""",
-        "keyword": """명품거리, 가로수길, 패션위크, 코엑스"""
-    },
-    "송파구": {
-        "name": """몽촌해치""",
-        "role": """백제의 유산과 현대의 기술을 공존시키는 도깨비""",
-        "personality": """장난꾸러기지만, 송파의 과거와 미래를 소중히 여김""",
-        "speech": """활기차고 신나는 '가이드 톤' (시간이 꼬였다고? 재밌잖아!)""",
-        "story": """백제 시대 몽촌토성에서 살던 해치가 롯데월드타워의 불빛을 보고 깨어났어요! 그는 올림픽공원에서 피크닉을 즐기다가도, 석촌호수에서 과거와 미래를 오가는 시간 여행의 문을 열어준답니다.""",
-        "welcome": """시간이 꼬였다고? 뭐, 재밌잖아!""",
-        "visual": """피크닉을 위한 돗자리를 멘 귀여운 해치""",
-        "keyword": """롯데월드타워, 석촌호수, 몽촌토성, 올림픽공원"""
-    },
-    "강동구": {
-        "name": """암사해치""",
-        "role": """암사동 선사유적지의 기억을 간직한 도깨비""",
-        "personality": """조용하지만 깊은 지혜를 가진 도깨비, 역사를 소중히 여김""",
-        "speech": """신비롭고 고요한 '고대인 톤' (기억해야 해...)""",
-        "story": """신석기 시대부터 강동구에 살아온 최고령 해치. 빗살무늬 토기를 빚으며 선조들의 지혜를 지켜왔어요. 암사동 유적지에서 밤이 되면 모닥불을 피우고 아이들에게 옛날이야기를 들려준답니다.""",
-        "welcome": """기억해야 해. 이곳은 오래전부터 사람이 살아온 마을이야.""",
-        "visual": """작은 빗살무늬 토기 조각을 든 해치""",
-        "keyword": """암사동유적, 빗살무늬토기, 한강, 역사"""
-    }
-}
-
-# -------------------------------------------------------------------------
-# [로직] 사용자 프로필 관리
-# -------------------------------------------------------------------------
-if "user_profile" not in st.session_state:
-    st.session_state.user_profile = None
-
-# -------------------------------------------------------------------------
-# [화면 1] 인트로: 입단 신청서
-# -------------------------------------------------------------------------
-if st.session_state.user_profile is None:
-    st.markdown('<p class="main-title">🦁 서울 해치 탐험 : 입단 신청서</p>', unsafe_allow_html=True)
-    st.markdown('<p class="sub-title">"안녕? 우리는 서울을 지키는 해치 군단이야!"</p>', unsafe_allow_html=True)
-    st.markdown("---")
-    
-    col1, col2 = st.columns([1.5, 1], gap="large")
-    
-    with col1:
-        intro_dir = "intro"
-        video_name = "main.mp4" 
-        image_name = "main.png" 
-
-        try:
-            if os.path.exists(intro_dir):
-                all_files = os.listdir(intro_dir)
-                if video_name in all_files:
-                    st.video(os.path.join(intro_dir, video_name), autoplay=True, loop=True, muted=True)
-                elif image_name in all_files:
-                    st.image(os.path.join(intro_dir, image_name), use_column_width=True)
-                else:
-                     st.info("🦁 인트로 미디어를 준비 중입니다.")
-            else:
-                 st.warning("⚠️ 'intro' 폴더가 없습니다.")
-        except Exception as e:
-             st.error(f"Error: {e}")
-             
-        # 정보 박스 (HTML)
-        st.markdown("""
-<div class="info-box">
-<h4>💡 해치(Haechi)는 어떤 친구인가요?</h4>
-<div class="info-item">
-<strong>🐣 탄생의 비밀</strong><br>
-해치는 선과 악을 구별하고, 화재나 재앙을 막아주는 전설 속 신비한 동물이에요.
-정의로운 마음을 가지고 서울에서 태어났답니다!
-</div>
-<div class="info-item">
-<strong>🦁 매력 포인트</strong><br>
-방울을 달고 서울 25개 구 곳곳에 숨어 살아요.<br>
-동네마다 모습과 성격이 달라서 찾아보는 재미가 쏠쏠하답니다.
-</div>
-<div class="info-item">
-<strong>🍀 함께하면 좋은 점</strong><br>
-해치와 함께라면 서울 여행이 더 안전하고 행운이 가득해져요.<br>
-진짜 서울 사람들만 아는 숨은 핫플레이스도 알려줄 거예요!
-</div>
-<div class="copyright">
-© 2025 My Story Doll & Seoul Haechi. All rights reserved.<br>
-Powered by M-Unit AI Technology.
-</div>
-</div>
-""", unsafe_allow_html=True)
-
-    with col2:
-        st.markdown("#### 🎫 탐험대원 등록 카드")
-        st.caption("너에 대해 알려주면 딱 맞는 해치를 소개해줄게!")
-        
-        with st.form("intro_form"):
-            name = st.text_input("이름 (Name)", placeholder="예: 길동이")
-            age = st.slider("나이 (Age)", 5, 100, 25)
-            gender = st.radio("성별 (Gender)", ["남성", "여성", "기타"], horizontal=True)
-            nationality = st.selectbox("국적 (Nationality)", ["대한민국", "USA", "China", "Japan", "France", "Germany", "Other"])
-            
-            st.markdown("---")
-            submitted = st.form_submit_button("해치 만나러 가기 (Start Adventure)", type="primary", use_container_width=True)
-            
-            if submitted and name:
-                st.session_state.user_profile = {
-                    "name": name,
-                    "age": age,
-                    "gender": gender,
-                    "nationality": nationality
-                }
-                st.rerun()
-            elif submitted and not name:
-                st.error("이름을 알려줘야 시작할 수 있어!")
-
-# -------------------------------------------------------------------------
-# [화면 2] 메인 앱 (Main Application)
-# -------------------------------------------------------------------------
-else:
-    user = st.session_state.user_profile
-    
-    with st.sidebar:
-        st.title(f"반갑소, {user['name']}!")
-        st.caption(f"{user['age']}세 / {user['nationality']}")
-        
-        if st.button("🔄 내 정보 다시 입력하기"):
-            st.session_state.user_profile = None
-            st.rerun()
-        st.markdown("---")
-        
-        st.markdown("### 🌐 언어 모드 (Language)")
-        lang_options = ["한국어", "English", "中文 (Chinese)", "日本語 (Japanese)", "Français (French)", "Deutsch (German)"]
-        
-        default_idx = 0
-        if user['nationality'] == "USA": default_idx = 1
-        elif user['nationality'] == "China": default_idx = 2
-        elif user['nationality'] == "Japan": default_idx = 3
-        
-        selected_lang = st.selectbox("대화 언어 선택", lang_options, index=default_idx)
-        st.markdown("---")
-        
-        if "OPENAI_API_KEY" in st.secrets:
-            api_key = st.secrets["OPENAI_API_KEY"]
-        else:
-            api_key = st.text_input("OpenAI API Key", type="password", placeholder="sk-...")
-        
-        client = None
-        if api_key:
-            try:
-                client = OpenAI(api_key=api_key)
-            except: pass
-        
-        if not client:
-            st.error("🚨 왼쪽 칸에 API Key를 넣고 [ENTER]를 쳐주세요!")
-        
-        st.markdown("### 📍 탐험할 지역 선택")
-        region = st.selectbox("어느 구의 해치를 만날까?", list(seoul_db.keys()))
-        char = seoul_db[region]
-        
-        #
+        "story": """서대문 형무소의 아픈 역사를 지켜보며, 사람들에게 '용기'를 불어넣기로 결심한 해치입니다. 독립문 근처에서 바람이 불면 홍지해치가 건네는 위로와 희망의 목소리를 들
