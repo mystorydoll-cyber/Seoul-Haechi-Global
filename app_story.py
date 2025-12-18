@@ -4,7 +4,7 @@ import unicodedata
 from openai import OpenAI
 
 # -------------------------------------------------------------------------
-# [설정] V61: 인트로 복원 & 메인 비주얼 강화 (Safe Version)
+# [설정] V62: 크레딧 복원 & 메인 비주얼 강화 (Final)
 # -------------------------------------------------------------------------
 st.set_page_config(
     layout="wide",
@@ -30,7 +30,7 @@ def find_image_file(region, char_name):
     return None
 
 # -------------------------------------------------------------------------
-# [스타일] CSS (인트로 복원 + 메인 강화)
+# [스타일] CSS (크레딧 스타일 추가)
 # -------------------------------------------------------------------------
 st.markdown("""
 <style>
@@ -49,6 +49,11 @@ st.markdown("""
     .info-box {
         background-color: #e8f4f8; padding: 25px; border-radius: 15px; margin-top: 20px;
         border-left: 6px solid #FF4B4B; box-shadow: 0 2px 10px rgba(0,0,0,0.05); color: #333;
+    }
+    /* 크레딧 스타일 (복원됨) */
+    .copyright {
+        font-size: 0.8rem; color: gray; margin-top: 20px; text-align: right;
+        border-top: 1px dashed #ccc; padding-top: 10px;
     }
     /* 메인 앱 스타일 */
     .app-header {
@@ -119,7 +124,19 @@ if st.session_state.user_profile is None:
             st.image(os.path.join(intro_dir, "main.png"), use_column_width=True)
         else:
              st.info("🦁 인트로 미디어를 준비 중입니다.")
-        st.markdown("""<div class="info-box"><h4>💡 해치(Haechi)는 어떤 친구인가요?</h4><div class="info-item"><strong>🐣 탄생의 비밀</strong><br>해치는 선과 악을 구별하고, 화재나 재앙을 막아주는 전설 속 신비한 동물이에요. 정의로운 마음을 가지고 서울에서 태어났답니다!</div><div class="info-item"><strong>🦁 매력 포인트</strong><br>방울을 달고 서울 25개 구 곳곳에 숨어 살아요.<br>동네마다 모습과 성격이 달라서 찾아보는 재미가 쏠쏠하답니다.</div><div class="info-item"><strong>🍀 함께하면 좋은 점</strong><br>해치와 함께라면 서울 여행이 더 안전하고 행운이 가득해져요. 진짜 서울 사람들만 아는 숨은 핫플레이스도 알려줄 거예요!</div></div>""", unsafe_allow_html=True)
+        # [복원된 정보 박스] - 크레딧 포함
+        st.markdown("""
+        <div class="info-box">
+            <h4>💡 해치(Haechi)는 어떤 친구인가요?</h4>
+            <div class="info-item"><strong>🐣 탄생의 비밀</strong><br>해치는 선과 악을 구별하고, 화재나 재앙을 막아주는 전설 속 신비한 동물이에요. 정의로운 마음을 가지고 서울에서 태어났답니다!</div>
+            <div class="info-item"><strong>🦁 매력 포인트</strong><br>방울을 달고 서울 25개 구 곳곳에 숨어 살아요.<br>동네마다 모습과 성격이 달라서 찾아보는 재미가 쏠쏠하답니다.</div>
+            <div class="info-item"><strong>🍀 함께하면 좋은 점</strong><br>해치와 함께라면 서울 여행이 더 안전하고 행운이 가득해져요. 진짜 서울 사람들만 아는 숨은 핫플레이스도 알려줄 거예요!</div>
+            <div class="copyright">
+            © 2025 My Story Doll & Seoul Haechi. All rights reserved.<br>
+            Powered by M-Unit AI Technology.
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
 
     with col2:
         st.markdown("#### 🎫 탐험대원 등록 카드")
