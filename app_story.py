@@ -3,7 +3,7 @@ import os
 from openai import OpenAI
 
 # -------------------------------------------------------------------------
-# [설정] V32: 서울 해치 탐험 (Hero Gallery Layout)
+# [설정] V33: 서울 해치 탐험 (Cinematic Video Intro)
 # -------------------------------------------------------------------------
 st.set_page_config(
     layout="wide",
@@ -80,47 +80,57 @@ if "user_profile" not in st.session_state:
     st.session_state.user_profile = None
 
 # -------------------------------------------------------------------------
-# [화면 1] 인트로: 사용자 정보 입력 (Hero + Gallery 모드)
+# [화면 1] 인트로: 사용자 정보 입력 (Video Hero + Gallery)
 # -------------------------------------------------------------------------
 if st.session_state.user_profile is None:
     st.title("🦁 서울 해치 탐험 : 입단 신청서")
     
-    col1, col2 = st.columns([1.6, 1]) # 이미지 공간을 좀 더 넓게
+    col1, col2 = st.columns([1.6, 1]) 
     with col1:
         st.markdown("### \"안녕? 우리는 서울을 지키는 해치 군단이야!\"")
         
-        # [핵심 로직] 메인 이미지와 나머지 구분하기
+        # [핵심 로직] 동영상(mp4) > 이미지(main.png) > 나머지
         intro_dir = "intro"
-        main_image_name = "main.png" # ★ 이 이름의 파일을 찾습니다! (jpg면 main.jpg로 수정)
+        video_name = "main.mp4" # 1순위: 동영상
+        image_name = "main.png" # 2순위: 이미지
 
         try:
             if os.path.exists(intro_dir):
-                all_images = [f for f in os.listdir(intro_dir) if f.lower().endswith(('.png', '.jpg', '.jpeg'))]
+                all_files = os.listdir(intro_dir)
                 
-                # 1. 메인(Hero) 이미지 크게 보여주기
-                if main_image_name in all_images:
-                    st.image(os.path.join(intro_dir, main_image_name), use_column_width=True)
-                    st.markdown("---") # 구분선
+                # 1. 동영상이 있으면 플레이어 작동 (자동재생, 반복)
+                if video_name in all_files:
+                    video_path = os.path.join(intro_dir, video_name)
+                    st.video(video_path, autoplay=True, loop=True, muted=True)
+                    st.markdown("---")
                 
-                # 2. 나머지 이미지들 3단 갤러리로 보여주기
-                other_images = [img for img in all_images if img != main_image_name]
-                if other_images:
+                # 2. 동영상이 없고 메인 이미지가 있으면 표시
+                elif image_name in all_files:
+                    st.image(os.path.join(intro_dir, image_name), use_column_width=True)
+                    st.markdown("---")
+                
+                # 3. 나머지 이미지들 갤러리 (main.mp4, main.png 제외)
+                # 이미지 파일만 골라내기
+                gallery_images = [f for f in all_files if f.lower().endswith(('.png', '.jpg', '.jpeg'))]
+                # 메인 이미지는 갤러리에서 빼기 (중복 방지)
+                gallery_images = [img for img in gallery_images if img != image_name]
+                
+                if gallery_images:
                     st.caption("👇 더 많은 친구들을 소개할게!")
                     cols = st.columns(3)
-                    for i, img_file in enumerate(other_images):
+                    for i, img_file in enumerate(gallery_images):
                         with cols[i % 3]:
                             st.image(os.path.join(intro_dir, img_file), use_column_width=True)
-                elif not main_image_name in all_images and not other_images:
-                     st.warning("해치들이 아직 도착하지 않았소. (intro 폴더 비어있음)")
+                elif not (video_name in all_files or image_name in all_files):
+                     st.warning("해치들이 아직 도착하지 않았소.")
 
             else:
                  st.warning("아직 'intro' 폴더가 없군요.")
                  
         except Exception as e:
-             st.error(f"이미지 로딩 오류: {e}")
+             st.error(f"미디어 로딩 오류: {e}")
 
     with col2:
-        # 오른쪽 입력 폼 디자인 개선
         with st.container(border=True):
             st.markdown("#### 📝 탐험대원 등록")
             st.caption("너에 대해 알려주면 딱 맞는 해치를 소개해줄게!")
@@ -130,7 +140,7 @@ if st.session_state.user_profile is None:
                 gender = st.radio("성별 (Gender)", ["남성", "여성", "기타"])
                 nationality = st.selectbox("국적 (Nationality)", ["대한민국", "USA", "China", "Japan", "France", "Germany", "Other"])
                 
-                st.markdown("") # 여백
+                st.markdown("") 
                 submitted = st.form_submit_button("🚀 해치 만나러 가기 (Start)", type="primary", use_container_width=True)
                 
                 if submitted and name:
@@ -159,7 +169,6 @@ else:
             st.rerun()
         st.markdown("---")
         
-        # 언어 선택
         st.markdown("### 🌐 언어 모드 (Language)")
         lang_options = ["한국어", "English", "中文 (Chinese)", "日本語 (Japanese)", "Français (French)", "Deutsch (German)"]
         
