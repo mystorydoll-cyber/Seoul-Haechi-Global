@@ -4,7 +4,7 @@ import unicodedata
 from openai import OpenAI
 
 # -------------------------------------------------------------------------
-# [설정] V58: 서울 해치 탐험 (Final Sync - 노원구 태해치 확정)
+# [설정] V59: 서울 해치 탐험 (비주얼 강화 & 메인 스테이지 배치)
 # -------------------------------------------------------------------------
 st.set_page_config(
     layout="wide",
@@ -14,117 +14,88 @@ st.set_page_config(
 )
 
 # -------------------------------------------------------------------------
-# [기능] 스마트 이미지 찾기 함수 (한글 자소 분리 해결 & 파일 찾기)
+# [기능] 스마트 이미지 찾기 함수
 # -------------------------------------------------------------------------
 def find_image_file(region, char_name):
-    # 1. 코드가 찾는 이상적인 파일명 (예: 노원구_태해치.png)
     target_name = f"{region}_{char_name}.png"
-    
-    # 2. 현재 폴더에 있는 모든 파일을 스캔
     try:
         current_files = os.listdir(".")
     except:
         return None
     
     for file in current_files:
-        # 3. 파일명과 찾는 이름을 모두 'NFC(표준)' 방식으로 통일해서 비교
-        # (맥/윈도우 간 한글 인코딩 차이로 인한 못 찾음 방지)
         norm_file = unicodedata.normalize('NFC', file)
         norm_target = unicodedata.normalize('NFC', target_name)
-        
         if norm_file == norm_target:
-            return file # 정확히 찾음!
-            
-    return None # 못 찾음
+            return file
+    return None
 
 # -------------------------------------------------------------------------
-# [스타일] CSS (디자인 고도화)
+# [스타일] CSS (폰트 및 카드 디자인 강화)
 # -------------------------------------------------------------------------
 st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Jua&display=swap');
 
-    /* [공통] 폰트 적용 */
-    h1, h2, h3, h4, .stMarkdown, p, div {
+    /* 전체 폰트 적용 */
+    h1, h2, h3, h4, .stMarkdown, p, div, span {
         font-family: 'Jua', sans-serif !important;
     }
 
-    /* 인트로 메인 타이틀 */
-    .main-title {
-        text-align: center;
-        font-size: 3.5rem !important;
-        color: #FF4B4B; 
-        margin-bottom: 0.5rem;
-        text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
-    }
-    .sub-title {
-        text-align: center;
-        font-size: 1.8rem !important;
-        color: #555;
-        margin-bottom: 2rem;
+    /* 캐릭터 이름 강조 */
+    .char-title {
+        font-size: 3.2rem !important;
+        color: #FF4B4B;
+        margin-bottom: 0px;
+        text-shadow: 2px 2px 0px #eee;
     }
     
-    /* 메인 페이지 타이틀 */
-    .app-header {
-        font-size: 2.8rem !important;
-        color: #333;
-        text-shadow: 2px 2px 0px #eee;
+    /* 캐릭터 역할 강조 */
+    .char-role {
+        font-size: 1.5rem !important;
+        color: #555;
         margin-bottom: 20px;
-    }
-    .app-header .highlight {
-        color: #FF4B4B;
-        font-size: 1.2em;
-        text-decoration: underline;
-        text-decoration-style: wavy;
-        text-decoration-color: #FFD700;
-        margin: 0 5px;
+        border-bottom: 3px solid #FFD700;
+        display: inline-block;
+        padding-bottom: 5px;
     }
 
-    /* 입력 폼 및 박스 스타일 */
-    div[data-testid="stForm"] {
-        background-color: #f9f9f9;
-        padding: 30px;
-        border-radius: 20px;
-        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    /* 설명 박스 스타일 */
+    .desc-box {
+        background-color: #fff;
         border: 2px solid #eee;
-    }
-    .info-box {
-        background-color: #e8f4f8;
-        padding: 25px;
         border-radius: 15px;
-        margin-top: 20px;
-        border-left: 6px solid #FF4B4B;
-        box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        padding: 20px;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+        margin-bottom: 10px;
+    }
+    
+    /* 말풍선 스타일 */
+    .speech-bubble {
+        background-color: #E8F4F8;
+        border-radius: 20px;
+        padding: 15px 25px;
         color: #333;
+        font-size: 1.2rem;
+        margin-top: 10px;
+        border: 2px solid #B3D7FF;
+        position: relative;
     }
-    .info-box h4 {
-         font-size: 1.5rem !important;
-         margin-bottom: 15px;
-         border-bottom: 2px dashed #b3d7ff;
-         padding-bottom: 10px;
+
+    /* 이미지 강조 */
+    img {
+        border-radius: 20px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+        transition: transform 0.3s;
     }
-    .info-item {
-        margin-bottom: 12px;
-        font-size: 1rem;
-        line-height: 1.6;
-        color: #444;
-    }
-    .info-item strong {
-        color: #007bff;
-        font-weight: 700;
-        font-size: 1.1rem;
-    }
-    .copyright {
-        font-size: 0.8em; 
-        color: gray; 
-        margin-top: 20px;
-        text-align: right;
+    img:hover {
+        transform: scale(1.02);
     }
 </style>
 """, unsafe_allow_html=True)
 
 # -------------------------------------------------------------------------
-# [데이터] CEO 원천 소스 (총 25개 구 - 노원구 태해치 반영 완료)
+# [데이터] CEO 원천 소스 (총 25개 구)
 # -------------------------------------------------------------------------
 seoul_db = {
     # --- [1차: 도심권] ---
@@ -231,7 +202,7 @@ seoul_db = {
     },
     # --- [3차: 서북/동북권] ---
     "노원구": {
-        "name": """태해치""",  # [수정] 태해치로 확정!
+        "name": """태해치""", 
         "role": """고구려 왕족의 영혼을 지키는 지혜로운 도깨비""",
         "personality": """신중하고 진지하며, 책임감이 강함""",
         "speech": """무게감 있고 비장한 '장군 톤' (~하오, ~하거라)""",
@@ -513,123 +484,4 @@ else:
         region = st.selectbox("어느 구의 해치를 만날까?", list(seoul_db.keys()))
         char = seoul_db[region]
         
-        with st.container(border=True):
-            st.subheader(f"✨ {char['name']}")
-            st.caption(f"{char['role']}")
-            
-            # [수정] 스마트 이미지 파인더 사용 (노원구_태해치.png 자동 감지)
-            found_img = find_image_file(region, char['name'])
-            
-            if found_img:
-                st.image(found_img)
-            else:
-                st.info(f"📸 {char['visual']} (이미지 준비중)")
-            st.markdown(f"**🔑 키워드:** {char['keyword']}")
-
-    # 메인 페이지 타이틀
-    st.markdown(f"""
-    <div class='app-header'>
-        🗺️ {region} 해치 탐험 : <span class='highlight'>{char['name']}</span>와의 만남
-    </div>
-    """, unsafe_allow_html=True)
-    
-    if client and "welcome_msg" not in st.session_state:
-        pass 
-    st.info(f"👋 **{char['name']}**: \"어서 와, {user['name']}! ({selected_lang} 모드 작동 중)\"")
-    st.markdown("---")
-
-    # 탭 메뉴
-    tab1, tab2, tab3, tab4 = st.tabs(["🦁📜 전설 듣기", "🦁🗣️ 수다 떨기", "🦁🎨 삽화 그리기", "🦁✍️ 나도 전설 작가"])
-
-    # [Tab 1] 전설 듣기
-    with tab1:
-        st.subheader(f"📖 {char['name']}의 이야기 보따리")
-        
-        if st.button(f"▶️ 이야기 들려주세요 ({selected_lang})", type="primary"):
-            if not client: st.error("🚨 API Key가 필요합니다!")
-            else:
-                with st.spinner(f"{user['name']}님을 위해 이야기를 각색하는 중..."):
-                    try:
-                        prompt = f"""
-                        당신은 '{char['name']}'입니다.
-                        [원래 이야기]: {char['story']}
-                        [말투]: {char['speech']}
-                        [사용자 정보]: {user['age']}세, {user['nationality']}, {user['name']}
-                        [필수 언어]: **{selected_lang}**로 답변하세요.
-                        [미션]: 위 사용자가 가장 흥미로워하고 이해하기 쉽게 이야기를 '각색'해서 들려주세요.
-                        """
-                        resp = client.chat.completions.create(model="gpt-4", messages=[{"role":"user", "content":prompt}])
-                        full_story = resp.choices[0].message.content
-                        st.write(full_story)
-
-                        with st.spinner("목소리 가다듬는 중..."):
-                            tts_res = client.audio.speech.create(model="tts-1", voice="onyx", input=full_story[:4096])
-                            tts_res.stream_to_file("story_audio.mp3")
-                            st.audio("story_audio.mp3", format="audio/mp3")
-                    except Exception as e: st.error(f"오류: {e}")
-
-    # [Tab 2] 수다 떨기
-    with tab2:
-        st.subheader(f"🗣️ {char['name']}와 {selected_lang}로 대화하기")
-        if "rp_messages" not in st.session_state: st.session_state.rp_messages = []
-        
-        for m in st.session_state.rp_messages:
-            with st.chat_message(m["role"]): st.write(m["content"])
-            
-        if user_input := st.chat_input(f"{selected_lang}로 말을 걸어보세요..."):
-            st.session_state.rp_messages.append({"role": "user", "content": user_input})
-            with st.chat_message("user"): st.write(user_input)
-            
-            if client:
-                try:
-                    sys_prompt = f"""
-                    당신은 '{char['name']}'입니다. ({char['personality']}, {char['speech']})
-                    상대방: {user['age']}세 {user['nationality']} {user['name']}
-                    **중요: 반드시 {selected_lang}로 대화하세요.**
-                    """
-                    response = client.chat.completions.create(
-                        model="gpt-4",
-                        messages=[{"role": "system", "content": sys_prompt}] + st.session_state.rp_messages
-                    )
-                    ai_reply = response.choices[0].message.content
-                    st.session_state.rp_messages.append({"role": "assistant", "content": ai_reply})
-                    with st.chat_message("assistant"): st.write(ai_reply)
-                except Exception as e: st.error(f"오류: {e}")
-            else: st.error("🚨 API Key가 필요합니다!")
-
-    # [Tab 3] 이미지
-    with tab3:
-        st.subheader("🎨 상상화 그리기")
-        scene = st.text_input("어떤 장면을 그릴까요?", placeholder="예: 떡볶이 먹는 해치")
-        if st.button("그림 생성"):
-            if client:
-                with st.spinner("그리는 중..."):
-                    try:
-                        p = f"Illustration of {char['name']} ({char['visual']}). Scene: {scene}. Target Audience Age: {user['age']}"
-                        res = client.images.generate(model="dall-e-3", prompt=p, size="1024x1024")
-                        st.image(res.data[0].url)
-                    except Exception as e: st.error(f"오류: {e}")
-            else: st.error("🚨 API Key가 필요합니다!")
-
-    # [Tab 4] 작가 모드 (Indentation Fixed)
-    with tab4:
-        st.subheader("👑 내가 만드는 새로운 전설")
-        col1, col2 = st.columns(2)
-        with col1: user_name = st.text_input("작가님 이름", value=user['name'])
-        with col2: keywords = st.text_input("소재 (예: AI, 우주선)")
-        
-        if st.button("✨ 새 전설 창작하기"):
-            if not client: st.error("🚨 API Key가 필요합니다!")
-            elif not keywords: st.warning("소재를 입력해주세요!")
-            else:
-                with st.spinner("창작 중..."):
-                    try:
-                        prompt = f"""
-                        작가: {user_name} ({user['age']}세)
-                        주인공: {char['name']}
-                        소재: {keywords}
-                        {user['age']}세 작가의 눈높이에 맞는 재미있는 동화를 써주세요.
-                        """
-                        resp = client.chat.completions.create(model="gpt-4", messages=[{"role":"user", "content":prompt}])
-                        st.write(resp.choices[0].message.content)
-                    except Exception as e: st.error(f"오류: {e}")
+        #
