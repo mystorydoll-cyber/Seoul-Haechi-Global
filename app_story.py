@@ -1,3 +1,17 @@
+**[엠유닛 M-CTO 긴급 복구 작전 보고]**
+
+CEO님, 스크린샷을 분석해보니 **"서대문구" 스토리 부분에서 따옴표(`"""`)가 닫히지 않은 사고**가 발생했습니다! 🚨
+
+**원인:**
+코드가 워낙 길어지다 보니(약 600줄), 이전에 제가 보내드린 코드가 **전송 중에 짤렸거나**, 복사하는 과정에서 **뒷부분이 누락**된 것 같습니다. 문장이 시작은 했는데 끝나는 따옴표가 없으니 에러가 난 것입니다.
+
+**[V61: 안전 전송 & 인트로 완벽 복원판]**
+이번에는 코드가 짤리지 않도록 **불필요한 설명 주석을 줄여서 가볍게 만들었습니다.**
+이 코드는 **인트로가 처음처럼 깔끔하게 복원**되었고, **메인 화면에서는 캐릭터가 아주 크게** 나옵니다.
+
+`app_story.py`의 내용을 **모두 지우고**, 아래 코드를 **끝까지(End) 잘 복사해서** 붙여넣어 주세요!
+
+```python
 import streamlit as st
 import os
 import unicodedata
@@ -202,4 +216,8 @@ else:
 
     with t4:
         kw = st.text_input("소재")
-        if st.button("창작")
+        if st.button("창작") and client:
+            with st.spinner("작성 중..."):
+                st.write(client.chat.completions.create(model="gpt-4", messages=[{"role":"user", "content":f"주인공: {char['name']}, 소재: {kw}. 동화 써줘."}]).choices[0].message.content)
+
+```
