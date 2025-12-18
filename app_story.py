@@ -3,7 +3,7 @@ import os
 from openai import OpenAI
 
 # -------------------------------------------------------------------------
-# [설정] V45: 서울 해치 탐험 (Main Page Design Upgrade)
+# [설정] V46: 서울 해치 탐험 (Tab Icons Hybrid & Title Emphasis)
 # -------------------------------------------------------------------------
 st.set_page_config(
     layout="wide",
@@ -13,20 +13,19 @@ st.set_page_config(
 )
 
 # -------------------------------------------------------------------------
-# [스타일] CSS (폰트 및 디자인 전체 적용)
+# [스타일] CSS (디자인 고도화)
 # -------------------------------------------------------------------------
 st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Jua&display=swap');
 
-    /* [공통] 모든 제목(h1~h3)에 주아체 강제 적용 */
-    h1, h2, h3, .stMarkdown h1, .stMarkdown h2, .stMarkdown h3 {
+    /* [공통] 폰트 적용 */
+    h1, h2, h3, h4, .stMarkdown, p, div {
         font-family: 'Jua', sans-serif !important;
     }
 
     /* 인트로 메인 타이틀 */
     .main-title {
-        font-family: 'Jua', sans-serif;
         text-align: center;
         font-size: 3.5rem !important;
         color: #FF4B4B; 
@@ -34,22 +33,26 @@ st.markdown("""
         text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
     }
     .sub-title {
-        font-family: 'Jua', sans-serif;
         text-align: center;
         font-size: 1.8rem !important;
         color: #555;
         margin-bottom: 2rem;
     }
     
-    /* [NEW] 메인 페이지(안쪽) 타이틀 스타일 */
+    /* [NEW] 메인 페이지 타이틀 (더 강력한 강조) */
     .app-header {
-        font-family: 'Jua', sans-serif;
-        font-size: 2.5rem !important;
+        font-size: 2.8rem !important;
         color: #333;
-        text-shadow: 1px 1px 2px rgba(0,0,0,0.1);
+        text-shadow: 2px 2px 0px #eee;
+        margin-bottom: 20px;
     }
-    .app-header span {
-        color: #FF4B4B; /* 포인트 컬러 */
+    .app-header .highlight {
+        color: #FF4B4B; /* 빨간색 포인트 */
+        font-size: 1.2em; /* 글자 더 크게 */
+        text-decoration: underline; /* 밑줄 */
+        text-decoration-style: wavy; /* 물결 밑줄 */
+        text-decoration-color: #FFD700; /* 노란 밑줄 */
+        margin: 0 5px;
     }
 
     /* 입력 폼 및 박스 스타일 */
@@ -191,7 +194,7 @@ if st.session_state.user_profile is None:
         except Exception as e:
              st.error(f"Error: {e}")
              
-        # 정보 박스 (HTML)
+        # 정보 박스
         st.markdown("""
 <div class="info-box">
 <h4>💡 해치(Haechi)는 어떤 친구인가요?</h4>
@@ -242,7 +245,7 @@ Powered by M-Unit AI Technology.
                 st.error("이름을 알려줘야 시작할 수 있어!")
 
 # -------------------------------------------------------------------------
-# [화면 2] 메인 앱 (Main Application)
+# [화면 2] 메인 앱
 # -------------------------------------------------------------------------
 else:
     user = st.session_state.user_profile
@@ -296,11 +299,11 @@ else:
                 st.info(f"📸 {char['visual']}")
             st.markdown(f"**🔑 키워드:** {char['keyword']}")
 
-    # [수정] 메인 페이지 제목 (폰트 적용 및 HTML 사용)
+    # [수정됨] 메인 페이지 제목 (폰트 적용 + 해치 이름 강조)
     st.markdown(f"""
-    <h1 class='app-header'>
-        🗺️ {region} 해치 탐험 : <span>{char['name']}</span>와의 만남
-    </h1>
+    <div class='app-header'>
+        🗺️ {region} 해치 탐험 : <span class='highlight'>{char['name']}</span>와의 만남
+    </div>
     """, unsafe_allow_html=True)
     
     if client and "welcome_msg" not in st.session_state:
@@ -308,8 +311,8 @@ else:
     st.info(f"👋 **{char['name']}**: \"어서 와, {user['name']}! ({selected_lang} 모드 작동 중)\"")
     st.markdown("---")
 
-    # [수정] 탭 아이콘을 모두 🦁(해치)로 통일
-    tab1, tab2, tab3, tab4 = st.tabs(["🦁 전설 듣기", "🦁 수다 떨기", "🦁 삽화 그리기", "🦁 나도 전설 작가"])
+    # [수정됨] 탭 아이콘을 '해치(🦁) + 기능' 조합으로 변경하여 타협
+    tab1, tab2, tab3, tab4 = st.tabs(["🦁📜 전설 듣기", "🦁🗣️ 수다 떨기", "🦁🎨 삽화 그리기", "🦁✍️ 나도 전설 작가"])
 
     # [Tab 1] 전설 듣기
     with tab1:
