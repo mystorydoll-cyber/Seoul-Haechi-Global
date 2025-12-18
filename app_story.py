@@ -3,7 +3,7 @@ import os
 from openai import OpenAI
 
 # -------------------------------------------------------------------------
-# [설정] V34: 서울 해치 탐험 (Simple Video Intro - No Gallery)
+# [설정] V36: 서울 해치 탐험 (Debugged & Fixed)
 # -------------------------------------------------------------------------
 st.set_page_config(
     layout="wide",
@@ -89,7 +89,6 @@ if st.session_state.user_profile is None:
     with col1:
         st.markdown("### \"안녕? 우리는 서울을 지키는 해치 군단이야!\"")
         
-        # [핵심 로직] 갤러리 삭제! 오직 동영상(mp4) 또는 메인 이미지(png)만 표시
         intro_dir = "intro"
         video_name = "main.mp4" 
         image_name = "main.png" 
@@ -98,18 +97,15 @@ if st.session_state.user_profile is None:
             if os.path.exists(intro_dir):
                 all_files = os.listdir(intro_dir)
                 
-                # 1. 동영상이 있으면 플레이어 작동 (자동재생, 반복)
+                # 1. 동영상
                 if video_name in all_files:
                     video_path = os.path.join(intro_dir, video_name)
                     st.video(video_path, autoplay=True, loop=True, muted=True)
-                
-                # 2. (안전장치) 동영상이 없고 메인 이미지가 있으면 표시
+                # 2. 메인 이미지
                 elif image_name in all_files:
                     st.image(os.path.join(intro_dir, image_name), use_column_width=True)
-                
                 else:
                      st.info("인트로 영상을 준비 중이오. (main.mp4 필요)")
-
             else:
                  st.warning("아직 'intro' 폴더가 없군요.")
                  
@@ -141,7 +137,7 @@ if st.session_state.user_profile is None:
                     st.error("이름을 알려줘야 시작할 수 있어!")
 
 # -------------------------------------------------------------------------
-# [화면 2] 메인 앱 (변동 없음)
+# [화면 2] 메인 앱
 # -------------------------------------------------------------------------
 else:
     user = st.session_state.user_profile
@@ -166,12 +162,22 @@ else:
         selected_lang = st.selectbox("대화 언어 선택", lang_options, index=default_idx)
         st.markdown("---")
         
+        # [핵심] API 키 입력 안내
         if "OPENAI_API_KEY" in st.secrets:
             api_key = st.secrets["OPENAI_API_KEY"]
         else:
-            api_key = st.text_input("OpenAI API Key", type="password")
+            api_key = st.text_input("OpenAI API Key", type="password", placeholder="sk-...")
         
-        client = OpenAI(api_key=api_key) if api_key else None
+        # 클라이언트 생성 시도 (에러 방지)
+        client = None
+        if api_key:
+            try:
+                client = OpenAI(api_key=api_key)
+            except Exception as e:
+                st.error(f"API Key 오류: {e}")
+        
+        if not client:
+            st.error("🚨 왼쪽 칸에 API Key를 넣고 [ENTER]를 쳐주세요!")
         
         st.markdown("### 📍 탐험할 지역 선택")
         region = st.selectbox("어느 구의 해치를 만날까?", list(seoul_db.keys()))
@@ -202,34 +208,29 @@ else:
         st.subheader(f"📖 {char['name']}의 이야기 보따리")
         
         if st.button(f"▶️ 이야기 들려주세요 ({selected_lang})", type="primary"):
-            if not client: st.warning("API Key 필요")
+            if not client: st.error("🚨 API Key가 필요합니다! (왼쪽 사이드바 확인)")
             else:
                 with st.spinner(f"{user['name']}님을 위해 이야기를 각색하는 중..."):
-                    prompt = f"""
-                    당신은 '{char['name']}'입니다.
-                    [원래 이야기]: {char['story']}
-                    [말투]: {char['speech']}
-                    
-                    [사용자 정보]: {user['age']}세, {user['nationality']}, {user['name']}
-                    [필수 언어]: **{selected_lang}**로 답변하세요.
-                    
-                    [미션]: 위 사용자가 가장 흥미로워하고 이해하기 쉽게 이야기를 '각색'해서 들려주세요.
-                    """
-                    resp = client.chat.completions.create(model="gpt-4", messages=[{"role":"user", "content":prompt}])
-                    full_story = resp.choices[0].message.content
-                    st.write(full_story)
-
-                with st.spinner("목소리 가다듬는 중..."):
                     try:
-                        tts_res = client.audio.speech.create(
-                            model="tts-1",
-                            voice="onyx",
-                            input=full_story[:4096]
-                        )
-                        tts_res.stream_to_file("story_audio.mp3")
-                        st.audio("story_audio.mp3", format="audio/mp3")
+                        prompt = f"""
+                        당신은 '{char['name']}'입니다.
+                        [원래 이야기]: {char['story']}
+                        [말투]: {char['speech']}
+                        [사용자 정보]: {user['age']}세, {user['nationality']}, {user['name']}
+                        [필수 언어]: **{selected_lang}**로 답변하세요.
+                        [미션]: 위 사용자가 가장 흥미로워하고 이해하기 쉽게 이야기를 '각색'해서 들려주세요.
+                        """
+                        resp = client.chat.completions.create(model="gpt-4", messages=[{"role":"user", "content":prompt}])
+                        full_story = resp.choices[0].message.content
+                        st.write(full_story)
+
+                        # TTS
+                        with st.spinner("목소리 가다듬는 중..."):
+                            tts_res = client.audio.speech.create(model="tts-1", voice="onyx", input=full_story[:4096])
+                            tts_res.stream_to_file("story_audio.mp3")
+                            st.audio("story_audio.mp3", format="audio/mp3")
                     except Exception as e:
-                        st.error(f"오디오 오류: {e}")
+                        st.error(f"오류 발생: {e}")
 
     # [Tab 2] 수다 떨기
     with tab2:
@@ -242,4 +243,65 @@ else:
             with st.chat_message(m["role"]): st.write(m["content"])
                 
         if user_input := st.chat_input(f"{selected_lang}로 말을 걸어보세요..."):
-            st.session_state.rp
+            st.session_state.rp_messages.append({"role": "user", "content": user_input})
+            with st.chat_message("user"): st.write(user_input)
+            
+            if client:
+                try:
+                    sys_prompt = f"""
+                    당신은 '{char['name']}'입니다. ({char['personality']}, {char['speech']})
+                    상대방: {user['age']}세 {user['nationality']} {user['name']}
+                    **중요: 반드시 {selected_lang}로 대화하세요.**
+                    """
+                    response = client.chat.completions.create(
+                        model="gpt-4",
+                        messages=[{"role": "system", "content": sys_prompt}] + st.session_state.rp_messages
+                    )
+                    ai_reply = response.choices[0].message.content
+                    st.session_state.rp_messages.append({"role": "assistant", "content": ai_reply})
+                    with st.chat_message("assistant"): st.write(ai_reply)
+                except Exception as e:
+                    st.error(f"대화 오류: {e}")
+            else:
+                st.error("🚨 대화를 하려면 API Key가 필요합니다!")
+
+    # [Tab 3] 이미지 (★여기가 비어있었다면 이제 나올 겁니다★)
+    with tab3:
+        st.subheader("🎨 상상화 그리기")
+        scene = st.text_input("어떤 장면을 그릴까요?", placeholder="예: 떡볶이 먹는 해치")
+        
+        if st.button("그림 생성"):
+            if client:
+                with st.spinner("그리는 중..."):
+                    p = f"Illustration of {char['name']} ({char['visual']}). Scene: {scene}. Target Audience Age: {user['age']}"
+                    try:
+                        res = client.images.generate(model="dall-e-3", prompt=p, size="1024x1024")
+                        st.image(res.data[0].url)
+                    except Exception as e: st.error(f"오류 발생: {e}")
+            else:
+                st.error("🚨 그림을 그리려면 API Key가 필요합니다!")
+
+    # [Tab 4] 작가 모드
+    with tab4:
+        st.subheader("👑 내가 만드는 새로운 전설")
+        col1, col2 = st.columns(2)
+        with col1: user_name = st.text_input("작가님 이름", value=user['name'])
+        with col2: keywords = st.text_input("소재 (예: AI, 우주선)")
+            
+        if st.button("✨ 새 전설 창작하기"):
+            if not client:
+                st.error("🚨 작가가 되려면 API Key가 필요합니다!")
+            elif not keywords:
+                st.warning("소재를 입력해주세요!")
+            else:
+                with st.spinner("창작 중..."):
+                    try:
+                        prompt = f"""
+                        작가: {user_name} ({user['age']}세)
+                        주인공: {char['name']}
+                        소재: {keywords}
+                        {user['age']}세 작가의 눈높이에 맞는 재미있는 동화를 써주세요.
+                        """
+                        resp = client.chat.completions.create(model="gpt-4", messages=[{"role":"user", "content":prompt}])
+                        st.write(resp.choices[0].message.content)
+                    except Exception as e: st.error(f"오류: {e}")
