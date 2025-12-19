@@ -3,7 +3,7 @@ import os
 import unicodedata
 from openai import OpenAI
 
-# 1. [설정] V64: 데이터 무손실 통합 버전
+# 1. [설정] V65: 데이터 무손실 & 원본 스토리 엄격 적용 버전
 st.set_page_config(
     layout="wide",
     page_title="서울 해치 탐험",
@@ -38,7 +38,7 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# 4. [데이터] 25개 구 데이터
+# 4. [데이터] 25개 구 데이터 (CEO님 원본 100% 탑재)
 seoul_db = {
     "종로구": {"name": "초롱해치", "role": "전통과 역사를 지키는 선비 해치", "personality": "진지하고 사려 깊은 성격", "speech": "점잖은 '사극 톤' (~하오, ~다오)", "story": "조선시대 궁궐의 밤을 밝히던 초롱불이 해치가 되었어요. 경복궁과 광화문을 지키며 역사를 잊은 사람들에게 옛 이야기를 들려줍니다.", "welcome": "내 초롱은 언제나 빛나고 있어.", "visual": "청사초롱을 들고 갓을 쓴 분홍색 해치", "keyword": "경복궁, 광화문, 역사, 전통"},
     "중구": {"name": "쇼퍼해치", "role": "쇼핑과 패션을 사랑하는 힙한 해치", "personality": "활기차고 유행에 민감함", "speech": "통통 튀는 '쇼호스트 톤' (~거든요!, ~라구요!)", "story": "명동과 동대문의 쇼핑 열기 속에서 태어났어요. 마법의 쇼핑백으로 사람들에게 딱 맞는 패션 아이템을 찾아준답니다.", "welcome": "어머! 이 옷은 꼭 사야 해!", "visual": "양손에 쇼핑백을 들고 선글라스를 낀 해치", "keyword": "명동, 쇼핑, 패션, 남산타워"},
@@ -75,6 +75,7 @@ if "user_profile" not in st.session_state:
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
+# A. 입단 신청서 (Intro)
 if st.session_state.user_profile is None:
     st.markdown('<p class="main-title">🦁 서울 해치 탐험 : 입단 신청서</p>', unsafe_allow_html=True)
     st.markdown('<p style="text-align: center; font-size: 1.8rem; color: #555;">"안녕? 우리는 서울을 지키는 해치 군단이야!"</p>', unsafe_allow_html=True)
@@ -108,13 +109,14 @@ if st.session_state.user_profile is None:
                     st.session_state.user_profile = {"name": name, "age": age, "nationality": nationality}
                     st.rerun()
 
+# B. 메인 앱 (Main)
 else:
     user = st.session_state.user_profile
     
     with st.sidebar:
         st.title(f"반갑소, {user['name']}!")
         
-        # [수정] API 키 입력창 (상태 유지)
+        # [복구] API 키 입력창 (상태 유지)
         if "api_key" not in st.session_state:
             st.session_state.api_key = ""
         
@@ -125,7 +127,7 @@ else:
         client = OpenAI(api_key=st.session_state.api_key) if st.session_state.api_key else None
         
         st.markdown("---")
-        # [수정] 국적 선택 버튼 부활 (사이드바에 추가)
+        # [복구] 국적 선택 버튼 부활 (사이드바)
         new_nationality = st.selectbox("🌍 국적 / 언어", ["대한민국", "USA", "China", "Japan", "Other"], index=["대한민국", "USA", "China", "Japan", "Other"].index(user.get("nationality", "대한민국")))
         if new_nationality != user['nationality']:
             user['nationality'] = new_nationality
@@ -157,39 +159,47 @@ else:
 
     st.markdown("---")
     
-    # [복구] 4대 기능 탭 로직 완벽 구현
+    # --------------------------------------------------------------------------------
+    # [수정] 4대 기능 탭: 원본 스토리 엄격 반영 (Strict Mode Applied)
+    # --------------------------------------------------------------------------------
     t1, t2, t3, t4 = st.tabs(["📜 전설 듣기", "🗣️ 대화하기", "🎨 그림 그리기", "👑 작가 되기"])
 
-    # 1. 전설 듣기
+    # 1. 전설 듣기 (원본 사수 버전)
     with t1:
         st.subheader(f"📜 {char['name']}의 숨겨진 전설")
         if st.button("전설 이야기 들려줘!", key="btn_legend"):
             if not client:
                 st.error("🚨 사이드바에 OpenAI API Key를 입력해주세요!")
             else:
-                with st.spinner("옛날 옛적에..."):
+                with st.spinner(f"{char['name']}가 목을 가다듬고 있습니다..."):
                     try:
+                        # [핵심 수정] 원본 스토리 엄격 반영 프롬프트
                         prompt = f"""
                         당신은 서울 {region}의 마스코트 '{char['name']}'입니다.
                         사용자({user['name']}, {user['nationality']})에게 당신의 전설을 들려주세요.
-                        말투: {char['speech']}
-                        성격: {char['personality']}
-                        내용: {char['story']}를 기반으로 흥미진진하게 각색하세요.
+
+                        [절대 원칙]
+                        1. 아래 제공된 [원본 스토리]의 설정과 내용을 절대 벗어나지 마십시오.
+                        2. 없는 내용을 지어내거나(Hallucination) 왜곡하지 마십시오.
+                        3. [원본 스토리]의 내용을 기반으로 하되, 구연동화처럼 생동감 있는 묘사와 대사만 추가하십시오.
+                        
+                        [말투]: {char['speech']}
+                        [성격]: {char['personality']}
+                        [원본 스토리]: {char['story']}
                         """
                         response = client.chat.completions.create(
                             model="gpt-4o",
                             messages=[{"role": "system", "content": prompt}],
-                            temperature=0.7
+                            temperature=0.3  # [수정] 창의성을 낮춰 팩트 유지 강화
                         )
                         st.info(response.choices[0].message.content)
                     except Exception as e:
                         st.error(f"오류 발생: {e}")
 
-    # 2. 대화하기 (채팅)
+    # 2. 대화하기 (페르소나 강화 버전)
     with t2:
         st.subheader(f"🗣️ {char['name']}와 대화하기")
         
-        # 채팅 기록 표시
         for msg in st.session_state.messages:
             with st.chat_message(msg["role"]):
                 st.write(msg["content"])
@@ -204,18 +214,25 @@ else:
                 
                 with st.chat_message("assistant"):
                     with st.spinner("생각 중..."):
-                        sys_prompt = f"당신은 {char['name']}입니다. {char['speech']} 말투를 유지하세요. 지역: {region}."
+                        # [핵심 수정] 시스템 프롬프트에 스토리 정보 주입
+                        sys_prompt = f"""
+                        당신은 {region}의 {char['name']}입니다.
+                        당신의 배경 이야기는 다음과 같습니다: "{char['story']}"
+                        이 설정에 맞춰서 {char['speech']} 말투로 대답하세요.
+                        사용자가 배경 이야기와 다른 엉뚱한 질문을 하면, 당신의 이야기로 자연스럽게 유도하세요.
+                        """
                         full_msgs = [{"role": "system", "content": sys_prompt}] + st.session_state.messages
                         
                         response = client.chat.completions.create(
                             model="gpt-4o",
-                            messages=full_msgs
+                            messages=full_msgs,
+                            temperature=0.5
                         )
                         bot_reply = response.choices[0].message.content
                         st.write(bot_reply)
                         st.session_state.messages.append({"role": "assistant", "content": bot_reply})
 
-    # 3. 그림 그리기 (DALL-E)
+    # 3. 그림 그리기 (동일 유지)
     with t3:
         st.subheader("🎨 나만의 해치 그리기")
         draw_prompt = st.text_input("어떤 해치를 그리고 싶나요?", placeholder=f"{region}의 거리를 걷는 {char['name']}")
@@ -225,7 +242,7 @@ else:
             else:
                 with st.spinner("붓을 들고 그림을 그리는 중..."):
                     try:
-                        final_prompt = f"High quality 3D render style. {char['visual']}. {draw_prompt}"
+                        final_prompt = f"High quality 3D render style. Cute character. {char['visual']}. {draw_prompt}"
                         response = client.images.generate(
                             model="dall-e-3",
                             prompt=final_prompt,
@@ -238,7 +255,7 @@ else:
                     except Exception as e:
                         st.error(f"그림 생성 실패: {e}")
 
-    # 4. 작가 되기
+    # 4. 작가 되기 (동일 유지)
     with t4:
         st.subheader("👑 내가 만드는 해치 이야기")
         user_story = st.text_area("당신만의 이야기를 써보세요!", height=150)
