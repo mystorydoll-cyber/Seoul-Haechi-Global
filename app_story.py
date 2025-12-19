@@ -13,6 +13,16 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
+# --- [추가] API 키 시크릿 로드 부분 ---
+# Streamlit Cloud의 Secrets에서 키를 가져옵니다.
+if "OPENAI_API_KEY" in st.secrets:
+    api_key = st.secrets["OPENAI_API_KEY"]
+    client = OpenAI(api_key=api_key)
+else:
+    st.error("⚠️ API 키가 설정되지 않았습니다. Streamlit Cloud의 Settings > Secrets에서 OPENAI_API_KEY를 등록해주세요.")
+    client = None
+# ---------------------------------------
+
 # [데이터] 구별 고유 해치 이름 매칭
 name_map = {
     "종로구": "초롱해치", "중구": "쇼퍼해치", "용산구": "어텐션해치", "성동구": "뚝해치", 
@@ -37,7 +47,6 @@ def find_image_file(region, char_name):
 def speak(client, text, lang="한국어"):
     if not client or not text: return
     try:
-        # 다국어 대응 보이스 설정
         v_model = "alloy" if lang == "English" else "shimmer"
         response = client.audio.speech.create(model="tts-1", voice=v_model, input=text)
         audio_base64 = base64.b64encode(response.content).decode('utf-8')
@@ -87,7 +96,7 @@ if "user_profile" not in st.session_state: st.session_state.user_profile = None
 if "messages" not in st.session_state: st.session_state.messages = []
 
 # -------------------------------------------------------------------------
-# [화면 1] 인트로 : 영상 및 크레딧 100% 유지
+# [화면 1] 인트로 : 영상 및 크레딧 유지
 # -------------------------------------------------------------------------
 if st.session_state.user_profile is None:
     st.markdown('<p class="main-title">🦁 서울 해치 탐험 : 입단 신청서</p>', unsafe_allow_html=True)
@@ -111,16 +120,16 @@ if st.session_state.user_profile is None:
                     st.rerun()
 
 # -------------------------------------------------------------------------
-# [화면 2] 메인 탐험 : 스피커 복원 및 스토리 기반 인사말 수정
+# [화면 2] 메인 탐험 : 키 입력창 제거 및 자동 로드 적용
 # -------------------------------------------------------------------------
 else:
     user = st.session_state.user_profile
     with st.sidebar:
         st.title(f"🦁 {user['name']} 대원")
-        api_key = st.text_input("🔑 OpenAI API Key", type="password")
-        client = OpenAI(api_key=api_key) if api_key else None
+        # --- [변경] 기존 api_key 입력창을 삭제했습니다. ---
+        st.success("✅ OpenAI 연결 완료")
         st.markdown("---")
-        # [내비게이션 픽스] 원본 키값(Korean)을 리스트로 유지하여 다른 언어에서도 동작 보장
+        
         region_list = list(seoul_db.keys())
         region = st.selectbox("📍 탐험 지역 선택", region_list)
         char = seoul_db[region]
@@ -136,25 +145,23 @@ else:
         if img_f: st.image(img_f, use_container_width=True)
 
     with c2:
-        # [수정] 단순 인사가 아닌 '스토리 기반 지능형 인사말' 생성
         if client:
             welcome_p = f"너는 {char['name']}야. 말투: {char['tone']}. 사용자는 {user['name']}야. 너의 전설({char['story']})의 핵심 내용을 딱 한 문장 섞어서 사용자를 환영해줘. 언어는 {user['language']}로 해줘."
             res = client.chat.completions.create(model="gpt-4o-mini", messages=[{"role":"user", "content":welcome_p}])
             display_welcome = res.choices[0].message.content
         else:
-            display_welcome = f"{char['welcome']} (OpenAI Key를 입력하면 풍성한 이야기가 시작됩니다!)"
+            display_welcome = f"{char['welcome']} (관리자 설정을 확인해주세요.)"
 
         st.markdown(f"### ✨ {char['name']} 상세 정보")
         st.info(f"🛡️ 역할: {char['role']}\n\n🧬 성격: {char['personality']}")
         st.markdown(f"<div class='speech-bubble'><b>{char['name']}</b>: \"{display_welcome}\"</div>", unsafe_allow_html=True)
         
-        # [복원] 스피커 버튼
         if st.button(f"🔊 {user['language']}로 인사 듣기") and client:
             speak(client, display_welcome, user['language'])
 
     st.markdown("---")
     t1, t2, t3, t4 = st.tabs(["📜 전설 듣기", "🗣️ 대화하기", "🎨 그림 그리기", "👑 작가 되기"])
-    # (이하 탭 콘텐츠는 원본 유지)
+    
     with t1:
         st.subheader(f"📜 {char['name']}의 전설")
         if st.button("이야기 시작!") and client:
