@@ -4,7 +4,7 @@ import os
 from openai import OpenAI
 import unicodedata
 
-# 1. [설정] M-CTO V110: UI & 페르소나 완전 복구 (Stable Version)
+# 1. [설정] M-CTO: UI & 데이터 엔진 강화 버전
 st.set_page_config(
     layout="wide", 
     page_title="서울 해치 탐험", 
@@ -12,7 +12,7 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# [데이터] 구별 고유 해치 이름 매칭 (CSV 보조)
+# [데이터] 구별 고유 해치 이름 매칭
 name_map = {
     "종로구": "초롱해치", "중구": "쇼퍼해치", "용산구": "어텐션해치", "성동구": "뚝해치", 
     "광진구": "광나루해치", "동대문구": "한약해치", "중랑구": "장미해치", "성북구": "선잠해치", 
@@ -22,7 +22,7 @@ name_map = {
     "관악구": "낙성해치", "서초구": "법조해치", "강남구": "패션해치", "송파구": "몽촌해치", "강동구": "암사해치"
 }
 
-# 2. [기능] 이미지 검색 엔진
+# 2. [기능] 이미지 검색 엔진 (Unicode 정규화 포함)
 def find_image_file(region, char_name):
     try:
         current_files = os.listdir(".")
@@ -36,38 +36,52 @@ def find_image_file(region, char_name):
     except: pass
     return None
 
-# 3. [데이터 엔진] CSV 로드 (강력한 경로 인식 & 공백 제거)
+# 3. [데이터 엔진] CSV 로드 (강력한 에러 방지 로직)
 @st.cache_data
 def load_full_database():
     csv_file = "seoul_data.csv"
     if not os.path.exists(csv_file):
+        st.error(f"🚨 '{csv_file}' 파일이 존재하지 않습니다. 파일명을 확인해주세요.")
         return None
+    
+    # 다양한 인코딩 시도
+    df = None
+    for enc in ['utf-8-sig', 'cp949', 'utf-8', 'euc-kr']:
+        try:
+            df = pd.read_csv(csv_file, encoding=enc)
+            break
+        except: continue
+
+    if df is None:
+        st.error("🚨 CSV 파일을 읽을 수 없습니다. 인코딩 형식을 확인해주세요.")
+        return None
+
     try:
-        # 한글 깨짐 방지 및 공백 제거
-        df = pd.read_csv(csv_file, encoding='utf-8-sig')
         df.columns = df.columns.str.strip()
         df = df.fillna("")
         db = {}
         for _, row in df.iterrows():
-            reg = str(row.get('region', '')).strip()
+            # 컬럼명 유연성 확보 (영어/한글 혼용 대응)
+            reg = str(row.get('region', row.get('지역', ''))).strip()
             if reg:
                 c_name = name_map.get(reg, "서울해치")
                 db[reg] = {
                     "name": c_name,
-                    "role": str(row.get('role', '서울의 수호신')).strip(),
-                    "personality": str(row.get('tone', '친절함')).strip(),
-                    "story": str(row.get('story', '')).strip(),
-                    "welcome": str(row.get('welcome-msg', '반갑소!')).strip(),
-                    "visual": str(row.get('visual_desc', '')).strip(),
-                    "keyword": str(row.get('툭징2', reg)).strip()
+                    "role": str(row.get('role', row.get('역할', '서울의 수호신'))).strip(),
+                    "personality": str(row.get('tone', row.get('말투', '친절함'))).strip(),
+                    "story": str(row.get('story', row.get('전설', ''))).strip(),
+                    "welcome": str(row.get('welcome-msg', row.get('환영인사', '반갑소!'))).strip(),
+                    "visual": str(row.get('visual_desc', row.get('외형', ''))).strip(),
+                    "keyword": str(row.get('툭징2', row.get('특징2', reg))).strip()
                 }
         return db
-    except:
+    except Exception as e:
+        st.error(f"🚨 데이터 처리 중 오류 발생: {e}")
         return None
 
 seoul_db = load_full_database()
 
-# 4. [UI 스타일] CEO님 오리지널 CSS
+# 4. [UI 스타일]
 st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Jua&display=swap');
@@ -86,7 +100,7 @@ if "user_profile" not in st.session_state: st.session_state.user_profile = None
 if "messages" not in st.session_state: st.session_state.messages = []
 
 # -------------------------------------------------------------------------
-# [화면 1] 인트로 : 입단 신청서 (완벽 복원)
+# [화면 1] 인트로 : 입단 신청서
 # -------------------------------------------------------------------------
 if st.session_state.user_profile is None:
     st.markdown('<p class="main-title">🦁 서울 해치 탐험 : 입단 신청서</p>', unsafe_allow_html=True)
@@ -96,11 +110,9 @@ if st.session_state.user_profile is None:
     col_v, col_f = st.columns([1.5, 1], gap="large")
     
     with col_v:
-        # 인트로 영상
         if os.path.exists("intro/main.mp4"): st.video("intro/main.mp4", autoplay=True, loop=True)
         else: st.info("🦁 서울의 25개 구 수호신들을 만나보세요!")
         
-        # 설명 박스 & 크레딧
         st.markdown("""
         <div class="info-box">
             <h4>💡 해치(Haechi)는 어떤 친구인가요?</h4>
@@ -124,24 +136,27 @@ if st.session_state.user_profile is None:
                     st.rerun()
 
 # -------------------------------------------------------------------------
-# [화면 2] 메인 탐험 (페르소나 100% 복원)
+# [화면 2] 메인 탐험
 # -------------------------------------------------------------------------
 else:
     user = st.session_state.user_profile
     if not seoul_db:
-        st.error("🚨 데이터를 불러올 수 없습니다. 'seoul_data.csv'가 깃허브에 있는지 확인해주세요.")
+        st.error("🚨 데이터를 불러올 수 없습니다. CSV 파일 상태를 점검해주세요.")
         st.stop()
         
     with st.sidebar:
         st.title(f"🦁 {user['name']} 대원님")
         st.write(f"({user['age']}세 / {user['nationality']})")
         st.markdown("---")
-        # [복구] API Key 위치 이동
         api_key = st.text_input("🔑 OpenAI API Key", type="password")
         client = OpenAI(api_key=api_key) if api_key else None
         st.markdown("---")
-        region = st.selectbox("📍 탐험 지역 선택", list(seoul_db.keys()))
+        
+        # 데이터 로드 확인 후 셀렉트박스 표시
+        region_list = list(seoul_db.keys())
+        region = st.selectbox("📍 탐험 지역 선택", region_list)
         char = seoul_db[region]
+        
         if st.button("🔄 처음으로 돌아가기"):
             st.session_state.user_profile = None
             st.session_state.messages = []
@@ -151,13 +166,11 @@ else:
     
     c1, c2 = st.columns([1, 1.2])
     with c1:
-        # [복구] 고유 이미지 확대 매칭
         img_f = find_image_file(region, char['name'])
         if img_f: st.image(img_f, width=450)
         else: st.info(f"📸 {char['name']} 이미지 준비중")
         
     with c2:
-        # [복구] 지역명 - 해치이름 형식
         st.markdown(f"<p class='char-title'>{region} - {char['name']}</p>", unsafe_allow_html=True)
         st.markdown(f"<span class='char-role'>{char['role']}</span>", unsafe_allow_html=True)
         st.markdown(f"""
@@ -177,17 +190,14 @@ else:
             if not client: st.error("사이드바에 API Key를 입력해주세요!")
             else:
                 with st.spinner("해치가 옛날 이야기를 기억해내고 있습니다..."):
-                    # [복구] 나이/국적/말투 기반 스마트 페르소나
                     prompt = f"""
                     당신은 {region}의 {char['name']}입니다.
                     듣는 사람: {user['name']} ({user['age']}세, {user['nationality']} 국적)
                     말투: {char['personality']}를 완벽히 연기하십시오.
-                    
                     [지시]
-                    1. 아래 [원본스토리]를 절대 요약하지 말고 모두 들려주세요.
+                    1. 아래 [원본스토리]를 바탕으로 생생하게 들려주세요.
                     2. {user['age']}세 수준에 맞춰 단어 선택을 조절하세요.
                     3. 외국인 대원에게는 한국 고유의 정서를 친절히 설명해주세요.
-                    
                     [원본스토리]: {char['story']}
                     """
                     res = client.chat.completions.create(model="gpt-4o", messages=[{"role":"system", "content":prompt}])
@@ -203,7 +213,6 @@ else:
                 st.session_state.messages.append({"role":"user", "content":chat_p})
                 with st.chat_message("user"): st.write(chat_p)
                 with st.chat_message("assistant"):
-                    # 페르소나 대화 엔진
                     sys_p = f"너는 {char['name']}야. 말투: {char['personality']}. {user['age']}세 {user['nationality']} 대원과 대화 중. 배경: {char['story']}"
                     res = client.chat.completions.create(model="gpt-4o", messages=[{"role":"system","content":sys_p}]+st.session_state.messages)
                     reply = res.choices[0].message.content
