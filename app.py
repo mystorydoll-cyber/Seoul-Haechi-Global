@@ -1,126 +1,166 @@
 import streamlit as st
+import os
 from openai import OpenAI
 import time
 
-# 1. 극장 전용 페이지 설정
+# -------------------------------------------------------------------------
+# [설정] 통합 버전: 서울 해치 유니버스 (사용자용 + 관리자용)
+# -------------------------------------------------------------------------
 st.set_page_config(
     layout="wide",
-    page_title="🎭 서울스토리씨어터",
-    page_icon="🎭"
+    page_title="서울 해치 유니버스",
+    page_icon="🦁",
+    initial_sidebar_state="expanded"
 )
 
-# 2. 극장 디자인 (화려한 무대 배경 및 키오스크 요소)
+# -------------------------------------------------------------------------
+# [스타일] CSS (디자인 고도화)
+# -------------------------------------------------------------------------
 st.markdown("""
-    <style>
-    /* 전체 배경을 화려한 무대 커튼 이미지로 설정 */
-    .stApp {
-        background-image: url("https://images.unsplash.com/photo-1514306191717-452ec28c7814?q=80&w=2070&auto=format&fit=crop");
-        background-size: cover;
-        background-position: center;
-        background-repeat: no-repeat;
-        background-attachment: fixed;
+<style>
+    @import url('https://fonts.googleapis.com/css2?family=Jua&display=swap');
+    
+    /* 전체 폰트 적용 */
+    html, body, [class*="css"] {
+        font-family: 'Jua', sans-serif !important;
     }
-    /* 텍스트 가독성을 위한 반투명 배경 박스 */
-    .stMarkdown, .stTitle, .stSubheader, .stCaption, .stTextInput, .stSelectbox, .stSlider, .stTextArea {
-        background-color: rgba(0, 0, 0, 0.7); /* 검은색 반투명 */
+    
+    /* 타이틀 스타일 */
+    .main-title {
+        font-size: 3rem !important;
+        color: #FF4B4B;
+        text-align: center;
+        margin-bottom: 20px;
+        text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+    }
+    
+    /* 관리자 모드 전용 박스 스타일 */
+    .admin-box {
+        background-color: #f0f2f6;
         padding: 20px;
-        border-radius: 15px;
-        color: #f1f1f1;
-    }
-    /* 티켓박스/키오스크 느낌의 사이드바 */
-    [data-testid="stSidebar"] {
-        background-color: rgba(30, 30, 30, 0.9);
-        border-right: 2px solid #E50914;
-    }
-    /* 연극 입장 버튼 (골드 & 레드 테마) */
-    .stButton>button {
-        background: linear-gradient(135deg, #FFD700 0%, #E50914 100%);
-        color: #ffffff;
-        border: 2px solid #FFD700;
-        padding: 20px;
-        font-size: 24px;
-        font-weight: bold;
         border-radius: 10px;
-        width: 100%;
-        box-shadow: 0 4px 15px rgba(255, 215, 0, 0.5);
+        border-left: 5px solid #4B8BBE;
+        margin-bottom: 20px;
+        font-family: 'Malgun Gothic', sans-serif; /* 관리자는 가독성 폰트 */
     }
-    /* 입력 필드 내부 글씨색 하얗게 */
-    input, select, textarea {
-        color: white !important;
+</style>
+""", unsafe_allow_html=True)
+
+# -------------------------------------------------------------------------
+# [데이터] 14년 축적 로컬 데이터 자산 (공통 DB)
+# -------------------------------------------------------------------------
+seoul_db = {
+    "종로구": {
+        "name": "초롱해치",
+        "role": "전통과 역사를 지키는 해치",
+        "personality": "진지하고 사려 깊음, 예의 바름",
+        "speech": "사극 톤 (~하오, ~다오)",
+        "keyword": "경복궁, 창덕궁, 전통차, 한복",
+        "visual_desc": "Traditional Korean hat (Gat), holding a lantern, pink color haechi character"
+    },
+    "중구": {
+        "name": "쇼퍼해치",
+        "role": "쇼핑 도우미 도깨비",
+        "personality": "활기차고 트렌디함, 열정적",
+        "speech": "쇼호스트 톤 (~거든요!, ~신상이에요!)",
+        "keyword": "명동, 쇼핑, 패션, 남대문시장",
+        "visual_desc": "Wearing sunglasses, carrying colorful shopping bags, trendy fashion haechi character"
+    },
+    "용산구": {
+        "name": "어텐션해치",
+        "role": "다양성 존중 힙합 도깨비",
+        "personality": "쿨하고 자유로움, 개방적",
+        "speech": "교포 힙합 톤 (Yo!, Respect!)",
+        "keyword": "이태원, 세계 음식, 다양성, 뮤직",
+        "visual_desc": "Wearing headphones and hoodie, hip-hop style haechi character"
+    },
+    "성동구": {
+        "name": "뚝해치",
+        "role": "과거와 현재를 잇는 감성 해치",
+        "personality": "감성적이고 차분함, 낭만적",
+        "speech": "동화 구연가 톤 (~했답니다, ~군요)",
+        "keyword": "성수동 카페거리, 살곶이다리, 팝업스토어",
+        "visual_desc": "Sitting in a cafe, holding a coffee cup, emotional atmosphere haechi character"
+    },
+    "광진구": {
+        "name": "광나루해치",
+        "role": "미식가 해치",
+        "personality": "먹는 것을 좋아함, 미식가",
+        "speech": "미식가 톤 (음~!, 캬~!)",
+        "keyword": "한강, 뚝섬유원지, 맛집, 야경",
+        "visual_desc": "Eating delicious food, happy face haechi character"
     }
-    </style>
-    """, unsafe_allow_html=True)
+}
 
-# 3. 인트로: 커튼이 열리는 연출
-if 'theater_entered' not in st.session_state:
-    st.markdown("<h1 style='text-align: center; font-size: 60px;'>🎭</h1>", unsafe_allow_html=True)
-    st.markdown("<h1 style='text-align: center; color: #FFD700;'>서울스토리씨어터</h1>", unsafe_allow_html=True)
-    st.markdown("<p style='text-align: center; color: white;'>해치가 들려주는 빛나는 서울 이야기가 곧 상연됩니다.</p>", unsafe_allow_html=True)
+# -------------------------------------------------------------------------
+# [사이드바] 모드 선택 (핵심 기능)
+# -------------------------------------------------------------------------
+with st.sidebar:
+    st.title("🦁 해치 유니버스")
+    st.caption("AI Based Local Story Platform")
     
-    if st.button("🎭 티켓 제시하고 입장하기 (Enter)"):
-        st.session_state.theater_entered = True
-        st.rerun()
-    st.stop()
-
-# 4. 메인 무대 시작
-st.title("🎭 서울스토리씨어터")
-st.markdown("#### **“서울의 숨겨진 이야기를 들려주는 해치 만담꾼의 무대”**")
-
-st.divider()
-
-# 5. 티켓 정보 입력 (Kiosk)
-col1, col2 = st.columns([1, 2])
-
-with col1:
-    st.image("https://images.unsplash.com/photo-1543050760-456452075563?q=80&w=1974&auto=format&fit=crop", 
-             caption="오늘의 무대, 당신의 서울")
-
-with col2:
-    st.subheader("🎟️ 관람객 정보 등록 (Kiosk)")
-    u_name = st.text_input("관객 성함", placeholder="홍길동")
+    st.markdown("---")
     
-    c1, c2 = st.columns(2)
-    with c1:
-        u_loc = st.selectbox("이야기 무대 선택", ["종로구", "도봉구", "강서구", "강남구", "마포구"])
-    with c2:
-        u_mood = st.select_slider("연극 분위기", options=["잔잔한", "즐거운", "역동적인", "감동적인"])
-
-    u_request = st.text_area("연극에 꼭 넣고 싶은 장면", placeholder="예: 해치와 함께 야경을 보는 장면")
-
-# 6. 연극 상연 (AI 만담꾼 로직)
-if st.button("✨ 연극 상연 시작 (Show Time)"):
-    if not u_name:
-        st.error("관람객 성함을 입력해 주세요!")
+    # 여기서 모드를 선택합니다
+    app_mode = st.radio(
+        "모드 선택 (Mode Switch)", 
+        ["🙋‍♂️ 해치 탐험 (사용자용)", "🛠️ 콘텐츠 스튜디오 (관리자용)"],
+        index=0
+    )
+    
+    st.markdown("---")
+    
+    # API 키 입력
+    if "OPENAI_API_KEY" in st.secrets:
+        api_key = st.secrets["OPENAI_API_KEY"]
     else:
-        with st.spinner('📢 만담꾼 해치가 무대 조명을 켜고 있습니다...'):
-            try:
-                client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
-                
-                # 만담꾼 프롬프트
-                prompt = f"""
-                당신은 '서울스토리씨어터'의 노련한 이야기 만담꾼입니다.
-                {u_loc} 지역의 실제 설화나 전통적인 소재를 바탕으로,
-                관객 {u_name}님을 주인공으로 한 {u_mood} 분위기의 짧은 연극 대본을 써주세요.
-                {u_loc}의 대표적인 장소를 언급해야 하며, "{u_request}" 장면을 아주 재미있게 녹여내세요.
-                말투는 '~하오', '~다오' 같은 정겨운 만담꾼 말투를 사용하세요.
-                """
-                
-                response = client.chat.completions.create(
-                    model="gpt-4o-mini",
-                    messages=[{"role": "system", "content": "매력적인 로컬 스토리 만담꾼"},
-                              {"role": "user", "content": prompt}]
-                )
-                
-                story_content = response.choices[0].message.content
-                
-                st.divider()
-                st.subheader(f"🎬 제 1막: {u_name}님의 {u_loc} 이야기")
-                st.markdown(story_content)
-                st.balloons()
-                
-            except Exception as e:
-                st.error(f"무대 장치 오류: {e}")
+        api_key = st.text_input("OpenAI API Key", type="password")
+    
+    client = None
+    if api_key:
+        try: client = OpenAI(api_key=api_key)
+        except: pass
 
-# 7. 푸터
-st.divider()
-st.caption("© 2025 마이스토리돌(My Story Doll) - M-Unit 기술전략팀 제작")
+# =========================================================================
+# [MODE 1] 사용자 모드: 해치 탐험 (B2C Chatbot)
+# =========================================================================
+if app_mode == "🙋‍♂️ 해치 탐험 (사용자용)":
+    
+    if "user_profile" not in st.session_state:
+        st.session_state.user_profile = None
+
+    # 1-1. 인트로 화면 (로그인)
+    if st.session_state.user_profile is None:
+        st.markdown('<p class="main-title">🦁 서울 해치 탐험대</p>', unsafe_allow_html=True)
+        st.markdown("<h3 style='text-align: center;'>안녕? 나는 서울을 지키는 해치야!</h3>", unsafe_allow_html=True)
+        
+        col1, col2, col3 = st.columns([1,2,1])
+        with col2:
+            with st.form("intro_form"):
+                st.write("너에 대해 알려주면 딱 맞는 친구를 소개해줄게!")
+                name = st.text_input("이름이 뭐야?")
+                age = st.slider("나이는?", 5, 100, 20)
+                submitted = st.form_submit_button("탐험 시작하기!", use_container_width=True)
+                
+                if submitted and name:
+                    st.session_state.user_profile = {"name": name, "age": age}
+                    st.rerun()
+
+    # 1-2. 메인 탐험 화면 (채팅)
+    else:
+        user = st.session_state.user_profile
+        
+        # 지역 선택
+        region = st.selectbox("어느 지역으로 떠날까?", list(seoul_db.keys()))
+        char = seoul_db[region]
+        
+        col1, col2 = st.columns([1, 2])
+        with col1:
+            # 캐릭터 이미지 (플레이스홀더)
+            st.info(f"📸 {char['visual_desc']}")
+            
+        with col2:
+            st.subheader(f"👋 안녕! 나는 {region}의 '{char['name']}'야!")
+            st.write(f"**성격:** {char['personality']}")
+            st.write(f"**특징:** {char['keyword']}")
+            st.success(f
